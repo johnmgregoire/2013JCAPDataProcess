@@ -1,5 +1,7 @@
 # Allison Schubauer and Daisy Hernandez
-# 6/26/2013
+# Created: 6/24/2013
+# Last Updated: 6/26/2013
+# For JCAP
 # framework to run all functions in fomfunctions file automatically
 #   (still very much in progress)
 

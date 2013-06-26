@@ -1,6 +1,8 @@
 # written by John Gregoire
 # edited by Allison Schubauer and Daisy Hernandez
-# 6/26/2013
+# Created: 6/24/2013
+# Last Updated: 6/26/2013
+# For JCAP
 # first version of figure of merit functions for automated
 #   data processing
 
