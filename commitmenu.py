@@ -116,6 +116,14 @@ We thus cannot commit your file. Please refrain from doing this in the future."
         os.rename(oldPath,newPath)
         return newPath
 
+    """ TODO - A possible function to create """
+    def buildCompiled(self):
+        pass
+        # TODO: when it is already ready to go, perhaps call compiler.compileFile
+        # so that there is a .pyc file to make it faster. This only handles
+        # the startup being faster -- also make sure it doesn't get done everytime
+        # once a file gets compiled
+        
 def main():
     app = QtGui.QApplication(sys.argv)
     menu = MainMenu()
