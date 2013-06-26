@@ -1,12 +1,21 @@
 # written by John Gregoire
 # edited by Allison Schubauer and Daisy Hernandez
-# 6/26/2013
+# Created: 6/24/2013
+# Last Updated: 6/26/2013
+# For JCAP
 # first version of figure of merit functions for automated
 #   data processing
 
 from intermediatefunctions_firstversion import numpy
 import intermediatefunctions_firstversion as inter
 
+
+""" Calculate the steadystate mean. This is done by breaking the x into
+    pieces each of the size of TestPts. We try to add more and more test
+    points to the range that will produce our steadystate mean. This is done
+    without adding more noise by checking the value of the standard deviation
+    of that range weighted accordingly. The value of WeightExp is in order to
+    weight the importance of std and the number of points. """
 def CalcArrSS(rawd, x=['Ewe(V)', 'I(A)'], weightExp=1., numTestPts=10):
     x = rawd[x]
     i=numTestPts
@@ -16,6 +25,7 @@ def CalcArrSS(rawd, x=['Ewe(V)', 'I(A)'], weightExp=1., numTestPts=10):
         i+=numTestPts
     return x[:i].mean()
 
+""" Calculates the first E value at which I crosses the threshold. """
 def CalcE_IThresh(rawd, i='I(A)', v='Ewe(V)', iThresh=1e-5, numConsecPts=20,
                   setAbove=1, noThresh=1.):
     i = rawd[i]
@@ -23,16 +33,25 @@ def CalcE_IThresh(rawd, i='I(A)', v='Ewe(V)', iThresh=1e-5, numConsecPts=20,
     if not setAbove: # 0 for below, 1 for above
         i *= -1
         iThresh *= -1
+    # returns and array of same size with each index having a 0 or 1
+    # if at that index i >= iThresh, than there is a 1 else a 0
     keyPts = numpy.int16(i >= iThresh)
+    # Checks each index that can create a range of numConsecPts
+    # consecutive points. Range is then checked to see if everything
+    # in there is a 1. Only points that can create this range are in
+    # keyPtsConsec. 
     keyPtsConsec = [keyPts[x:x+numConsecPts].prod()
                     for x in range(len(keyPts)-numConsecPts)]
     if True in keyPtsConsec:
+        # see if there is any range in there than is a 1
         ival = keyPtsConsec.index(True)
+        # get this first range and return the mean
         return v[ival:ival+numConsecPts].mean()
     else:
-        # return value indicating threshold not reached
+        # no range was found given the parameters, return noThresh
         return noThresh
 
+""" gives you the average of the steadystate region """
 def CalcAvg(rawd, x=['Ewe(V)', 'I(A)'], t='t(s)', interval=1000, numStdDevs=2.,
             numPts=1000, startAtEnd=0):
     x = rawd[x]

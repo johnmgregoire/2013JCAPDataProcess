@@ -1,5 +1,7 @@
 # Allison Schubauer and Daisy Hernandez
-# 6/26/2013
+# Created: 6/24/2013
+# Last Updated: 6/26/2013
+# For JCAP
 # functions for converting our formatted data dictionaries to
 #   and from JSON files
 

@@ -1,11 +1,19 @@
 # written by John Gregoire
 # modified by Allison Schubauer and Daisy Hernandez
-# 6/26/2013
+# Created: 6/24/2013
+# Last Updated: 6/26/2013
+# For JCAP
 # first version of helper/intermediate data functions for automated
 #   data processing
 
 import numpy
 
+""" Averages a maximum of 2*nptoneside neighbor points for each datapoint. It
+    uses the datapoints distance from the mean of its neighbors of interest
+    and compares it to the the value that is within nsig stdivations from its
+    neighbors. If its within the range, it leaves the value, else it replaces it
+    with its neighbors mean. The gaptsoneside reduces the neighbors range and
+    nptsoneside increases it."""
 def removeoutliers_meanstd(arr, nptsoneside, nsig, gapptsoneside=0):
     # only going to use the points directly beside to remove outliers
     if nptsoneside==1 and gapptsoneside==0:
@@ -30,6 +38,23 @@ def removeoutliers_meanstd(arr, nptsoneside, nsig, gapptsoneside=0):
                           and (arr[i],) or (numpy.append(arr[i0:i],arr[i+1:i1]).mean(),))[0]\
                          for i, i0, i1 in zip(range(len(arr)), starti, stopi)],\
                         dtype=arr.dtype)
+    return arr
+
+""" Function that removes single pixel outliers. It does this by checking each
+    datapoint with two neighbors and checking if it is bigger than both of its
+    neighbors times critratiotoneighbors. If it is, then it replaces the value
+    by averaging the two neighbors."""
+def removesinglepixoutliers(arr,critratiotoneighbors=1.5):
+    # Only checks the array without the ends because the ends don't have both
+    # a datapoint to the left and the right. It compares this to arrays that
+    # are offset by 2 at either the end or beginning. This makes sure to compare
+    # each datapoint with the datapoint to its right and to its left. 
+    c=numpy.where((arr[1:-1]>(critratiotoneighbors*arr[:-2]))*(arr[1:-1]>(critratiotoneighbors*arr[2:])))
+    # We get the index of the points that match both of the comparisons above.
+    # We add 1 to account for the fact that indexing was off by 1 since we
+    # did not account for either end
+    c0=c[0]+1
+    arr[c0]=(arr[c0-1]+arr[c0+1])/2
     return arr
 
 def illumtimeshift(rawd, ikey, tkey, tshift):
