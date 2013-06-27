@@ -1,25 +1,29 @@
 # Allison Schubauer and Daisy Hernandez
 # Created: 6/24/2013
-# Last Updated: 6/26/2013
+# Last Updated: 6/27/2013
 # For JCAP
 # functions for converting our formatted data dictionaries to
 #   and from JSON files
 
+import os
 import csv
 import json
 import numpy
 
+SAVEPATH = 'C:\Users\shubauer\Desktop\Working folder\AutoAnalysisJSON'
 
 def toJSON(filename, fomdict, intermeddict, inputdict):
-    with open(filename+'.json', 'w') as fileObj:
+    savepath = os.path.join(SAVEPATH, filename+'.json')
+    with open(savepath, 'w') as fileObj:
         dataTup = (fomdict, intermeddict, inputdict)
         listOfObjs = []
         for dataDict in dataTup:
             listOfObjs.append(convertNpTypes(dataDict))
         json.dump(listOfObjs, fileObj)
+    return savepath
 
-def fromJSON(filename):
-    with open(filename+'.json', 'r') as fileObj:
+def fromJSON(filepath):
+    with open(filepath, 'r') as fileObj:
         dataTup = json.load(fileObj, object_hook=unicodeToString)
     print dataTup
     return dataTup

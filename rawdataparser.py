@@ -8,6 +8,8 @@ import cPickle as pickle
 import numpy
 import os
 
+SAVEPATH = 'C:\Users\shubauer\Desktop\Working folder\AutoAnalysisPck'
+
 """ read all raw data from file into dictionary """
 def readechemtxt(path):
     # TO DO: ask Ed about reliability of database connection
@@ -91,9 +93,10 @@ def readechemtxt(path):
     # get filename from path, remove '.txt' at end
     # TO DO: save this in a specific folder
     filecode = os.path.split(path)[1][:-4]
-    with open(filecode+'.pck', 'wb') as savefile:
+    savepath = os.path.join(SAVEPATH, filecode+'.pck')
+    with open(savepath, 'wb') as savefile:
         pickle.dump(rawData, savefile)
-    return filecode+'.pck'
+    return savepath
 
 """ convert a string into an int or float if numeric; otherwise,
     leave string as is """

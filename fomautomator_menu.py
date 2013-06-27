@@ -1,3 +1,7 @@
+# Allison Schubauer and Daisy Hernandez
+# 6/20/2013
+# PyQt4-powered GUI for starting the automated data processor
+
 import sys, os
 from PyQt4 import QtCore, QtGui
 import fomautomator
