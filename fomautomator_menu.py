@@ -94,7 +94,7 @@ class MultipleFileDialog(QtGui.QFileDialog):
     
     def __init__(self):
         super(MultipleFileDialog, self).__init__()
-        #self.setOption(self.DontUseNativeDialog, True)
+        self.setOption(self.DontUseNativeDialog, True)
         self.setFileMode(self.ExistingFiles)
         defaultButtons = self.findChildren(QtGui.QPushButton)
         self.openButton = [button for button in defaultButtons if "Open" in
