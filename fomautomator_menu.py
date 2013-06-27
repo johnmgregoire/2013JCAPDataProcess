@@ -57,6 +57,7 @@ class MainMenu(QtGui.QMainWindow):
         self.fileSelected.setText(textFileTuple[0])
         self.files = textFileTuple[1]
         print len(self.files)
+        print self.files
 
     def selectProgram(self):
         self.programDialog = QtGui.QFileDialog(self,
@@ -126,8 +127,7 @@ class MultipleFileDialog(QtGui.QFileDialog):
         filesToOpen = []
         for index in self.selInds:
             if index.column() == 0:
-                selFiles.append(os.path.join(str(self.directory().absolutePath()),
-                                                str(index.data().toString())))
+                selFiles.append(str(self.directory().absoluteFilePath(index.data().toString())))
         for item in selFiles:
             if item.endswith('.txt'):
                 filesToOpen.append(item)
