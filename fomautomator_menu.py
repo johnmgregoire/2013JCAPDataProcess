@@ -1,5 +1,6 @@
 import sys, os
 from PyQt4 import QtCore, QtGui
+import fomautomator
 
 class MainMenu(QtGui.QMainWindow):
     def __init__(self):
@@ -33,6 +34,10 @@ class MainMenu(QtGui.QMainWindow):
         self.progSelected.setReadOnly(True)
         self.mainLayout.addWidget(self.progSelected, 1, 1)
 
+        runButton = QtGui.QPushButton('Run', self)
+        runButton.clicked.connect(self.startAutomation)
+        self.mainLayout.addWidget(runButton, 2, 0)
+
         self.show()
 
     def selectData(self):
@@ -60,7 +65,19 @@ class MainMenu(QtGui.QMainWindow):
             targetDir = str(dirList[0])
             self.progSelected.setText(targetDir)
             pyFiles = filter(lambda f: f.endswith('.py'), os.listdir(targetDir))
-            print pyFiles
+            # THIS IS TEMPORARY
+            self.progModule = [mod[:-3] for mod in pyFiles if
+                               mod == 'fomfunctions_firstversion.py'][0]
+
+    def startAutomation(self):
+        if self.progModule:
+            self.automator = fomautomator.FOMAutomator(self.files, self.progModule)
+            self.automator.runSequentially()
+        else:
+            # raise error dialog that no version has been selected -
+            #   alternatively, don't make "run" button clickable until
+            #   version folder has been selected
+            pass
         
 
 """ copied (basically) from StackOverflow:

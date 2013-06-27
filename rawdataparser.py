@@ -89,9 +89,11 @@ def readechemtxt(path):
     rawData['path'] = path
     # time to save rawData!
     # get filename from path, remove '.txt' at end
+    # TO DO: save this in a specific folder
     filecode = os.path.split(path)[1][:-4]
     with open(filecode+'.pck', 'wb') as savefile:
         pickle.dump(rawData, savefile)
+    return filecode+'.pck'
 
 """ convert a string into an int or float if numeric; otherwise,
     leave string as is """
