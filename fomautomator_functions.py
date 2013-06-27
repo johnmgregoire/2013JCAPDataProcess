@@ -71,8 +71,8 @@ def test():
     global RAW_DATA
     global INTER_DATA
     global FOMS
-    #raw_data_files = ['622-1-322-232109-20130605141515010PDT.pck', '622-1-322-232164-20130605142813719PDT.pck']
-    raw_data_files = ['632-1-327-252803-20130610212436139PDT.pck']
+    raw_data_files = ['622-1-322-232109-20130605141515010PDT.pck', '622-1-322-232164-20130605142813719PDT.pck']
+    #raw_data_files = ['632-1-327-252803-20130610212436139PDT.pck']
     allFuncs = [f[1] for f in getmembers(fomfunctions_firstversion, isfunction)]
     fdicts = {}
     # user-input params for each function are the same for all files in this session
