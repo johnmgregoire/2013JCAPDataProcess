@@ -44,7 +44,11 @@ class FOMAutomator():
                 RAW_DATA = pickle.load(rawdata)
             validDictArgs = [RAW_DATA, INTER_DATA]
             expType = RAW_DATA.get('BLTechniqueName')
+            print 'expType:', expType
             targetFOMs = self.module.validFuncs.get(expType)
+            if not targetFOMs:
+                print expfile
+                continue
             fomFuncs = [func for func in self.allFuncs if func.func_name in targetFOMs]
             for funcToRun in fomFuncs:
                 fname = funcToRun.func_name

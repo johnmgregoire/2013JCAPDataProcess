@@ -133,7 +133,8 @@ class MultipleFileDialog(QtGui.QFileDialog):
                 filesToOpen.append(item)
             else:
                 for root, dirs, files in os.walk(item):
-                    selFiles.extend(files)
+                    for filename in files:
+                        selFiles.append(os.path.join(root, filename))
         # send string representation of selected files and list of
         #   filepaths to MainMenu (triggers loadData)
         self.filesSelected.emit((self.selText, filesToOpen))
