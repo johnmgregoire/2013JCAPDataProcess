@@ -76,9 +76,7 @@ class MainMenu(QtGui.QMainWindow):
     def startAutomation(self):
         if self.progModule:
             self.automator = fomautomator.FOMAutomator(self.files, self.progModule)
-            self.automator.start()
-            self.automator.join()
-            #self.automator.runSequentially()
+            self.automator.runParallel()
         else:
             # raise error dialog that no version has been selected -
             #   alternatively, don't make "run" button clickable until
