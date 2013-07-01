@@ -9,7 +9,7 @@ import fomautomator
 class MainMenu(QtGui.QMainWindow):
     def __init__(self):
         super(MainMenu, self).__init__()
-        self.program = None
+        self.progModule = None
         self.initUI()
 
     def initUI(self):
@@ -57,7 +57,6 @@ class MainMenu(QtGui.QMainWindow):
         self.fileSelected.setText(textFileTuple[0])
         self.files = textFileTuple[1]
         print len(self.files)
-        print self.files
 
     def selectProgram(self):
         self.programDialog = QtGui.QFileDialog(self,
@@ -77,13 +76,15 @@ class MainMenu(QtGui.QMainWindow):
     def startAutomation(self):
         if self.progModule:
             self.automator = fomautomator.FOMAutomator(self.files, self.progModule)
-            self.automator.runSequentially()
+            self.automator.start()
+            self.automator.join()
+            #self.automator.runSequentially()
         else:
             # raise error dialog that no version has been selected -
             #   alternatively, don't make "run" button clickable until
             #   version folder has been selected
             pass
-        
+
 
 """ copied (basically) from StackOverflow:
     http://stackoverflow.com/questions/6484793/

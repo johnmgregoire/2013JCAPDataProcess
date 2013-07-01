@@ -4,6 +4,7 @@
 
 import sys
 import cPickle as pickle
+from multiprocessing import Process
 from inspect import *
 from rawdataparser import *
 import jsontranslator
@@ -16,13 +17,14 @@ RAW_DATA = {}
 INTER_DATA = {}
 FOMS = {}
 
-class FOMAutomator():
+class FOMAutomator(Process):
     def __init__(self, rawDataFiles, funcModule):
+        super(FOMAutomator, self).__init__()
         self.files = rawDataFiles
-        importlib.import_module(funcModule)
-        self.module = [sys.modules[mod] for mod in sys.modules
-                       if mod == funcModule][0]
-        self.allFuncs = [f[1] for f in getmembers(self.module, isfunction)]
+        #self.module = [sys.modules[mod] for mod in sys.modules
+                       #if mod == funcModule][0]
+        self.modname = funcModule
+        #self.allFuncs = [f[1] for f in getmembers(self.modname, isfunction)]
 
     def runSequentially(self):
         global PARAMS
@@ -72,6 +74,57 @@ class FOMAutomator():
                         FOMS[('_').join(map(str, varset))+'_'+fname] = fom
             # temporary function to monitor program's output
             self.testWithJSON(expfile)
+
+    def run(self):
+        funcMod = __import__(self.modname)
+        self.allFuncs = [f[1] for f in getmembers(funcMod, isfunction)]
+        expfile = self.files[0]
+        global PARAMS
+        global RAW_DATA
+        global INTER_DATA
+        global FOMS
+        self.fdicts = {}
+        # user-input params for each function are the same for all files in this session
+        PARAMS = {}
+        self.processFuncs()
+        self.requestParams(PARAMS)
+        # RUN ON ONE FILE
+        # intermediate data and figures of merit are different for every file
+        INTER_DATA = {}
+        FOMS = {}
+        rawdatafile = readechemtxt(expfile)
+        with open(rawdatafile) as rawdata:
+            RAW_DATA = pickle.load(rawdata)
+        validDictArgs = [RAW_DATA, INTER_DATA]
+        expType = RAW_DATA.get('BLTechniqueName')
+        print 'expType:', expType
+        targetFOMs = funcMod.validFuncs.get(expType)
+        if not targetFOMs:
+            print expfile
+            return
+        fomFuncs = [func for func in self.allFuncs if func.func_name in targetFOMs]
+        for funcToRun in fomFuncs:
+            fname = funcToRun.func_name
+            fdict = self.fdicts[fname]
+            fdictargs = validDictArgs[:fdict['numdictargs']]
+            allvarsets = [fdict.get('~'+batch) for batch in fdict.get('batchvars')]
+            commonvars = lambda vartup, varlist: [var for var in varlist if
+                                                  var in vartup]
+            # requires list of lists - I'm not sure if I like this (it's silly for functions
+            #   with one batch variable)
+            for varset in [commonvars(vartup, varlist) for vartup in
+                           itertools.product(*allvarsets) for varlist in
+                           targetFOMs[fname]]:
+                # this is to make up for the fact that commonvars returns empty lists and
+                #   single-argument lists for two or more batch variables - probably shouldn't
+                #   be a permanent solution
+                if len(varset) == len(fdict.get('batchvars')):
+                    fom = funcToRun(**dict(zip(funcToRun.func_code.co_varnames[:funcToRun.func_code.co_argcount],
+                                                fdictargs+[self.accessDict(fname, varset, argname) for argname
+                                                in funcToRun.func_code.co_varnames[fdict['numdictargs']:funcToRun.func_code.co_argcount]])))
+                    FOMS[('_').join(map(str, varset))+'_'+fname] = fom
+        # temporary function to monitor program's output
+        self.testWithJSON(expfile)
 
     def processFuncs(self):
         global PARAMS
