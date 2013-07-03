@@ -1,20 +1,40 @@
-# Allison Schubauer and Daisy Hernandez
-# 6/20/2013
-# PyQt4-powered GUI for starting the automated data processor
-
-import sys, os
-from PyQt4 import QtCore, QtGui
+import time
+import os, os.path
+import sys
+import numpy
+import PyQt4.QtCore as QtCore
+import PyQt4.QtGui as QtGui
 import fomautomator
 
-class MainMenu(QtGui.QMainWindow):
-    def __init__(self):
-        super(MainMenu, self).__init__()
+sys.path.append("C:\Users\dhernand\Documents\GitHub\JCAPPyDBComm")
+import mysql_dbcommlib 
+
+
+"""         TODOs:
+            - If nothing is selected, give an error!!
+            - Get the exits to work!
+"""
+
+################################################################################
+############################ echemvisDialog class ##############################
+################################################################################
+
+class echemvisDialog(QtGui.QMainWindow):
+
+    """ handles all the initializing - currently does nothing with this folderpath"""
+    def __init__(self, parent=None, title='', folderpath=None):
+        super(echemvisDialog, self).__init__()
+        self.parent=parent
+
+        self.paths = []
         self.progModule = None
+        self.initDB()
         self.initUI()
 
+    """ initializes the user interface """
     def initUI(self):
-        self.setGeometry(500, 200, 500, 600)
-        self.setWindowTitle('Data Analysis Automator')
+        self.setGeometry(300, 200, 150, 150)
+        self.setWindowTitle('Processing Files')
 
         self.mainWidget = QtGui.QWidget(self)
         self.setCentralWidget(self.mainWidget)
@@ -22,41 +42,178 @@ class MainMenu(QtGui.QMainWindow):
         self.mainLayout = QtGui.QGridLayout()
         self.mainWidget.setLayout(self.mainLayout)
 
-        selectFiles = QtGui.QPushButton('Select Data Files', self)
-        selectFiles.clicked.connect(self.selectData)
-        self.mainLayout.addWidget(selectFiles, 0, 0)
+        self.prog_label = QtGui.QLineEdit()
+        self.message_label = QtGui.QLabel()
+        self.files_label = QtGui.QLabel()
+        self.message_label.setText("Which files would you like to run your analysis on?")
+        self.files_label.setText("")
 
-        self.fileSelected = QtGui.QLineEdit(self)
-        self.fileSelected.setReadOnly(True)
-        self.mainLayout.addWidget(self.fileSelected, 0, 1)
+        self.progButton=QtGui.QPushButton("Select Program", self)
+        self.methodButton=QtGui.QPushButton()
+        self.folderButton=QtGui.QPushButton()
+        self.runButton=QtGui.QPushButton()
+        self.methodButton.setText("select\ninput method")
+        self.folderButton.setText("select\nfolder")
+        self.runButton.setText("Run")
 
-        selectProgFolder = QtGui.QPushButton('Select Program', self)
-        selectProgFolder.clicked.connect(self.selectProgram)
-        self.mainLayout.addWidget(selectProgFolder, 1, 0)
+        self.progButton.clicked.connect(self.selectProgram)
+        self.methodButton.pressed.connect(self.selectmethod)
+        QtCore.QObject.connect(self.folderButton, QtCore.SIGNAL("pressed()"), self.selectfolder)
+        QtCore.QObject.connect(self.runButton, QtCore.SIGNAL("pressed()"), self.selectrun)
 
-        self.progSelected = QtGui.QLineEdit(self)
-        self.progSelected.setReadOnly(True)
-        self.mainLayout.addWidget(self.progSelected, 1, 1)
+        self.mainLayout.addWidget(self.progButton,0,0)
+        self.mainLayout.addWidget(self.prog_label,1,0)
+        self.mainLayout.addWidget(self.message_label,2,0)
+        self.mainLayout.addWidget(self.methodButton,3,0)
+        self.mainLayout.addWidget(self.folderButton,4,0)
+        self.mainLayout.addWidget(self.files_label,5,0)
+        self.mainLayout.addWidget(self.runButton,6,0)
 
-        runButton = QtGui.QPushButton('Run', self)
-        runButton.clicked.connect(self.startAutomation)
-        self.mainLayout.addWidget(runButton, 2, 0)
+        # hide the buttons -- we haven't selected a method nor do we have files
+        if self.dbdatasource:
+            self.folderButton.hide()
+        self.runButton.hide()
 
-        self.show()
+        self.show()     
 
-    def selectData(self):
-        self.datafileDialog = MultipleFileDialog()
-        self.datafileDialog.filesSelected.connect(self.loadData)
-        if self.datafileDialog.isHidden():
-            self.datafileDialog = None
+    """ initializes datamembers related to the database """
+    def initDB(self):
+        self.dbdatasource = True
 
-    """ textFileTuple is signal received from file dialog; 0th item is string of
-        file/folder names to display in line edit, 1st item is list of filepaths
-        to load """
-    def loadData(self, textFileTuple):
-        self.fileSelected.setText(textFileTuple[0])
-        self.files = textFileTuple[1]
-        print len(self.files)
+    """ sets either the database connection or says that we're doing manual selection """    
+    def methodSetter(self, folderpath = None):
+        if folderpath is None:
+            self.dbdatasource_temp=userinputcaller(self.parent, inputs=[('DBsource?', bool, '1')], title='Change to 0 to read for local harddrive.')
+            # if self.dbdatasource_temp is NONE then you hit the exit and so you should quit the program
+            if not self.dbdatasource_temp:
+                QtGui.QApplication.exit()
+            self.dbdatasource = self.dbdatasource_temp[0]
+            if self.dbdatasource:
+                self.dbc=None
+        else:
+            self.dbdatasource=0
+         
+        self.plate_id=None
+        
+
+    def filePathDecider(self, folderpath=None):
+        if folderpath is None:
+            self.folderpath=None
+            self.selectfolder()
+        else:
+            self.folderpath=folderpath
+
+
+    def createdbsession(self):
+        ans=userinputcaller(self, inputs=[('user:', str, ''), ('password:', str, '')], title='Enter database credentials', cancelallowed=True)
+        if ans is None:
+            return
+        self.dbc=mysql_dbcommlib.dbcomm(user=ans[0].strip(), password=ans[1].strip(),db='hte_echemdrop_proto')
+
+
+    def selectmethod(self,folderpath=None):
+        self.methodSetter(folderpath)
+
+        # We can show the folder button since we decided to manually select files
+        if not self.dbdatasource:
+            self.folderButton.show()
+        else:
+            self.folderButton.hide()
+            
+        self.filePathDecider(folderpath)
+
+    def selectrun(self):
+        print "You selected the run button"
+        if self.paths:
+            if self.progModule:
+                pass
+                self.automator = fomautomator.FOMAutomator(self.paths, self.progModule)
+                self.automator.runParallel()
+                                 
+    def selectfolder(self, plate_id=None, selectexids=None, folder=None):
+        # hide the run, we're in process of selecting files.
+        self.runButton.hide()
+
+        # resetting some things
+        self.paths = []
+        
+        if self.dbdatasource:
+            # since we're doing the database, hide some buttons
+            self.folderButton.hide()
+            if not self.dbc is None:
+                print "closing old setion"
+                self.dbc.close()
+                self.message_label.setText("")
+                self.files_label.setText("")
+
+            self.createdbsession()
+            
+            if plate_id is None:
+                ans=userinputcaller(self, inputs=[('plate ID:', int, '632')], title='Enter plate ID for analysis', cancelallowed=not self.plate_id is None)[0]
+                if ans is None:
+                    return
+                self.plate_id=ans
+            else:
+                self.plate_id=plate_id
+
+            fields=['id', 'sample_no','created_at', 'experiment_no', 'technique_name', 'dc_data__t_v_a_c_i']
+            self.dbrecarrd=self.dbc.getarrd_scalarfields('plate_id', self.plate_id, fields, valcvtcstr='%d')
+            if len(self.dbrecarrd['id'])==0:
+                print 'NO DB RECORDS FOUND FOR PLATE ', self.plate_id
+                return
+            if selectexids is None:
+                self.userselectdbinds()
+                
+            else:
+                self.selectexids=selectexids
+            inds=numpy.concatenate([numpy.where(self.dbrecarrd['experiment_no']==exid)[0] for exid in self.selectexids])
+            for k, v in self.dbrecarrd.iteritems():
+                self.dbrecarrd[k]=v[inds]     
+
+        else:
+            if folder is None:
+                self.folderpath=mygetdir(self, markstr='containing echem data .txt for single plate')
+            else:
+                self.folderpath=folder
+            # since we're not doing database and we already  took some files, we can show some buttons again
+            self.folderButton.show()
+
+        print "getting the path info"
+        thepaths = self.getPathInfo()
+        self.message_label.setText("If you wish to select another folder, please use the button below")
+        plateExperiment = "Plate " + str(self.plate_id) + " Experiments " + str(self.selectexids)
+        self.files_label.setText(str(self.folderpath or plateExperiment))
+        
+        if thepaths:
+            self.paths = thepaths
+            # we have some things to run, so we can show the button
+            self.runButton.show()
+
+    """ gets the path info and returns them as a list """
+    def getPathInfo(self, ext='.txt'):
+        if self.dbdatasource:
+            fns = self.dbrecarrd['dc_data__t_v_a_c_i']
+            pathstoread_temp=[os.path.join(os.path.join('J:/hte_echemdrop_proto/data','%d' %self.plate_id), fn) for fn in fns]
+            pathstoread = [os.path.normpath(path) for path in pathstoread_temp]
+        else:
+            fns=os.listdir(self.folderpath)
+            pathstoread_temp=[os.path.join(self.folderpath, fn) for fn in fns if fn.endswith(ext)]
+            pathstoread = [os.path.normpath(path) for path in pathstoread_temp]
+
+        return pathstoread
+    
+    def userselectdbinds(self):
+        t=self.dbrecarrd['created_at']
+        ex=self.dbrecarrd['experiment_no']
+        tn=self.dbrecarrd['technique_name']
+        
+        exset=sorted(list(set(ex)))
+        ex_trange_techl=[(exv, numpy.sort(t[ex==exv])[[0,-1]], list(set(tn[[ex==exv]]))) for exv in exset]
+        
+        idialog=selectdbsessionsDialog(self, ex_trange_techl=ex_trange_techl)
+        idialog.exec_()
+        exsetinds=idialog.selectinds
+        self.selectexids=[exset[i] for i in exsetinds]
 
     def selectProgram(self):
         self.programDialog = QtGui.QFileDialog(self,
@@ -67,83 +224,187 @@ class MainMenu(QtGui.QMainWindow):
             # list of QStrings (only one folder is allowed to be selected)
             dirList = self.programDialog.selectedFiles()
             targetDir = str(dirList[0])
-            self.progSelected.setText(targetDir)
+            self.prog_label.setText(targetDir)
             pyFiles = filter(lambda f: f.endswith('.py'), os.listdir(targetDir))
             # THIS IS TEMPORARY
             self.progModule = [mod[:-3] for mod in pyFiles if
                                mod == 'fomfunctions_firstversion.py'][0]
 
-    def startAutomation(self):
-        if self.progModule:
-            self.automator = fomautomator.FOMAutomator(self.files, self.progModule)
-            self.automator.runParallel()
-        else:
-            # raise error dialog that no version has been selected -
-            #   alternatively, don't make "run" button clickable until
-            #   version folder has been selected
-            pass
 
+################################################################################
+######################### selectdbsessionsDialog class #########################
+################################################################################
 
-""" copied (basically) from StackOverflow:
-    http://stackoverflow.com/questions/6484793/
-    multiple-files-and-folder-selection-in-a-qfiledialog """
-class MultipleFileDialog(QtGui.QFileDialog):
-
-    filesSelected = QtCore.pyqtSignal(tuple)
-    
-    def __init__(self):
-        super(MultipleFileDialog, self).__init__()
-        self.setOption(self.DontUseNativeDialog, True)
-        self.setFileMode(self.ExistingFiles)
-        defaultButtons = self.findChildren(QtGui.QPushButton)
-        self.openButton = [button for button in defaultButtons if "Open" in
-                           str(button.text())][0]
-        self.openButton.clicked.disconnect()
-        self.openButton.clicked.connect(self.openClicked)
-        self.tree = self.findChild(QtGui.QTreeView)
-        self.nameLine = self.findChild(QtGui.QLineEdit)
-        self.tree.selectionModel().selectionChanged.disconnect()
-        self.tree.selectionModel().selectionChanged.connect(self.showSelection)
-        self.show()
-
-    """ shows name(s) of currently selected files/folders in the
-        filename bar in the dialog """
-    def showSelection(self):
-        self.selInds = self.tree.selectionModel().selectedIndexes()
-        selItems = []
-        for index in self.selInds:
-            # selInds is array of rows and columns - each row is
-            #   a selected item; columns hold information about the
-            #   items.  Column 0 is the folder/file name.
-            if index.column() == 0:
-                selItems.append(str(index.data().toString()))
-        self.selText = ', '.join(selItems)
-        self.nameLine.setText(self.selText)
-
-    """ sends list of all .txt files that were selected to MainMenu """
-    def openClicked(self):
-        selFiles = []
-        filesToOpen = []
-        for index in self.selInds:
-            if index.column() == 0:
-                selFiles.append(str(self.directory().absoluteFilePath(index.data().toString())))
-        for item in selFiles:
-            if item.endswith('.txt'):
-                filesToOpen.append(item)
-            else:
-                for root, dirs, files in os.walk(item):
-                    for filename in files:
-                        selFiles.append(os.path.join(root, filename))
-        # send string representation of selected files and list of
-        #   filepaths to MainMenu (triggers loadData)
-        self.filesSelected.emit((self.selText, filesToOpen))
-        self.hide()
+""" TODO """            
+class selectdbsessionsDialog(QtGui.QDialog):
+    def __init__(self, parent, ex_trange_techl, maxsessions=15, title='Select DB experiment sessions to analyze'):
+        super(selectdbsessionsDialog, self).__init__(parent)
+        self.setWindowTitle(title)
+        self.mainLayout=QtGui.QVBoxLayout()
         
+        self.cblist=[]
+        self.cbinds=[]
+        for count,  (ex, (t0, t1), techl) in enumerate(ex_trange_techl[:maxsessions]):
+            cb=QtGui.QCheckBox()
+            cb.setText('exp %d: %s to %s, %s' %(ex, str(t0), str(t1), ','.join(techl)))
+            cb.setChecked(False)
+            self.mainLayout.addWidget(cb)
+            self.cblist+=[cb]
+            self.cbinds+=[[count]]
+        if len(ex_trange_techl)>maxsessions:
+            cb=QtGui.QCheckBox()
+            ex, (t0, t1), techl=ex_trange_techl[maxsessions]
+            ex2, (t02, t12), techl2=ex_trange_techl[-1]
+            techl=list(set(techl+techl2))
+            cb.setText('exp %d-%d: %s to %s, %s' %(ex, ex2, str(t0), str(t12), ','.join(techl)))
+            cb.setChecked(True)
+            self.mainLayout.addWidget(cb)
+            self.cblist+=[cb]
+            self.cbinds+=[range(maxsessions, len(ex_trange_techl))]
+        cb.setChecked(True)
+        
+        self.buttonBox = QtGui.QDialogButtonBox(self)
+        self.buttonBox.setGeometry(QtCore.QRect(520, 195, 160, 26))
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
+        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
+        self.mainLayout.addWidget(self.buttonBox)
+         
+        QtCore.QObject.connect(self.buttonBox,QtCore.SIGNAL("accepted()"),self.ExitRoutine)
+        self.setLayout(self.mainLayout)
+        QtCore.QMetaObject.connectSlotsByName(self)
+        
+    def ExitRoutine(self):
+        self.selectinds=[]
+        for cb, l in zip(self.cblist, self.cbinds):
+            if cb.isChecked():
+                self.selectinds+=l
+                
+    
+################################################################################
+########################## userinputDialog class ###############################
+################################################################################
+                
+""" a class that helps us create QDialog for user input """
+class userinputDialog(QtGui.QDialog):
+    def __init__(self, parent, inputs=[('testnumber', int, '')], title='Enter values'):
+        super(userinputDialog, self).__init__(parent)
+        self.setWindowTitle(title)
+        self.mainLayout= QtGui.QGridLayout()
+        self.parent=parent
+        self.inputs=inputs
+        self.lelist=[]
+        for i, tup in enumerate(self.inputs):
+            lab=QtGui.QLabel()
+            lab.setText(tup[0])
+            le=QtGui.QLineEdit()
+            if len(tup)>2:
+                le.setText(tup[2])
+            self.lelist+=[le]
+            self.mainLayout.addWidget(lab, 0, i, 1, 1)
+            self.mainLayout.addWidget(le, 1, i, 1, 1)    
+        self.buttonBox = QtGui.QDialogButtonBox(self)
+        self.buttonBox.setGeometry(QtCore.QRect(520, 195, 160, 26))
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
+        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
+        self.mainLayout.addWidget(self.buttonBox, 2, 0, len(inputs), 1)
+         
+        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.ExitRoutine)
+        self.setLayout(self.mainLayout)
+    
+        QtCore.QMetaObject.connectSlotsByName(self)
+        
+        self.problem=False
+        self.ok=False
 
-def main():
-    app = QtGui.QApplication(sys.argv)
-    menu = MainMenu()
-    sys.exit(app.exec_())
+    def ExitRoutine(self):
+        self.ok=True
+        self.problem=False
+        self.ans=[]
+        self.inputstrlist=[str(le.text()).strip() for le in self.lelist]
+        for s, tup in zip(self.inputstrlist, self.inputs):
+            try:
+                self.ans+=[myevaluator(s,tup[1])]
+            except:
+                self.problem=True
+                break
+        if self.problem:
+            idialog=messageDialog(self, 'problem with conversion of ' + tup[0])
+            idialog.exec_()
+
+
+################################################################################
+############################ messageDialog class ###############################
+################################################################################
+
+""" class for delivering simple messages through a QDialog box"""            
+class messageDialog(QtGui.QDialog):
+    def __init__(self, parent=None, title=''):
+        super(messageDialog, self).__init__(parent)
+        
+        self.setWindowTitle(title)
+        self.mainLayout=QtGui.QGridLayout()
+  
+        self.buttonBox = QtGui.QDialogButtonBox(self)
+        self.buttonBox.setGeometry(QtCore.QRect(520, 195, 160, 26))
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok)
+        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
+        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.reject)
+        self.mainLayout.addWidget(self.buttonBox, 0, 0)
+         
+        QtCore.QObject.connect(self.buttonBox,QtCore.SIGNAL("accepted()"),self.ExitRoutine)
+
+        self.setLayout(self.mainLayout)
+        
+    def ExitRoutine(self):
+        return
+
+    
+################################################################################
+########################## Helper Functions ####################################
+################################################################################
+            
+""" assist in creating dialog boxes for the user to input information we need """
+def userinputcaller(parent, inputs=[('testnumber', int)], title='Enter values',  cancelallowed=True):
+    problem=True
+    while problem:
+        idialog=userinputDialog(parent, inputs, title)
+        idialog.exec_()
+        problem=idialog.problem
+        if not idialog.ok and cancelallowed:
+            return None
+        inputs=[(tup[0], tup[1], s) for tup, s  in zip(inputs, idialog.inputstrlist)]
+
+    return idialog.ans
+
+""" helps select a folder directory """
+def mygetdir(parent=None, xpath="%s" % os.getcwd(),markstr='' ):
+    if parent is None:
+        xapp = QtGui.QApplication(sys.argv)
+        xparent = QWidget()
+        returnfn = unicode(QtGui.QFileDialog.getExistingDirectory(xparent,''.join(['Select directory:', markstr]), xpath))
+        xparent.destroy()
+        xapp.quit()
+        return returnfn
+    return unicode(QtGui.QFileDialog.getExistingDirectory(parent,''.join(['Select directory:', markstr]), xpath))
+                    
+""" evaluates c based on the type it is """
+def myevaluator(c, theType):
+    if c=='None':
+        c=None
+    elif c=='nan' or c=='NaN':
+        c=numpy.nan
+    else:
+        # does this in case we do c = 0 and theType = bool
+        temp=c.lstrip('0')
+        if (temp=='' or temp=='.') and '0' in c:
+            c=0
+        c = theType(c)
+    return c
 
 if __name__ == '__main__':
-    main()
+    mainapp=QtGui.QApplication(sys.argv)
+    mm = echemvisDialog()
+    sys.exit(mainapp.exec_())
