@@ -25,6 +25,8 @@ class FOMAutomator(object):
         processPool = Pool()
         jobs = [(filename, self.modname, self.params, self.funcDicts) for filename in self.files]
         processPool.map(makeFileRunner, jobs)
+        processPool.close()
+        processPool.join()
 
     def runSequentially(self):
         # user-input params for each function are the same for all files in this session
