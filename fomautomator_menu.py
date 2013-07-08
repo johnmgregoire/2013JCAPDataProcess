@@ -1,3 +1,8 @@
+# Allison Schubauer and Daisy Hernandez
+# Created: 6/27/2013
+# Last Updated: 7/8/2013
+# For JCAP
+
 import time
 import os, os.path
 import sys
@@ -8,6 +13,8 @@ import fomautomator
 
 sys.path.append("C:\Users\dhernand\Documents\GitHub\JCAPPyDBComm")
 import mysql_dbcommlib 
+
+""" TODO: Merge with error loggger? """
 
 
 ################################################################################
@@ -44,12 +51,9 @@ class echemvisDialog(QtGui.QMainWindow):
         self.files_label.setText("")
 
         self.progButton=QtGui.QPushButton("Select Program", self)
-        self.methodButton=QtGui.QPushButton()
-        self.folderButton=QtGui.QPushButton()
-        self.runButton=QtGui.QPushButton()
-        self.methodButton.setText("select\ninput method")
-        self.folderButton.setText("select\nfolder")
-        self.runButton.setText("Run")
+        self.methodButton=QtGui.QPushButton("select\ninput method", self)
+        self.folderButton=QtGui.QPushButton("select\nfolder", self)
+        self.runButton=QtGui.QPushButton("Run", self)
 
         self.progButton.clicked.connect(self.selectProgram)
         self.methodButton.pressed.connect(self.selectmethod)
@@ -92,7 +96,6 @@ class echemvisDialog(QtGui.QMainWindow):
         self.selectexids=None
 
         return 1
-        
 
     def filePathDecider(self, folderpath=None):
         if folderpath is None:
@@ -101,7 +104,7 @@ class echemvisDialog(QtGui.QMainWindow):
         else:
             self.folderpath=folderpath
 
-
+    """ creates  a new database conection """
     def createdbsession(self):
         ans=userinputcaller(self.parent, inputs=[('user:', str, ''), ('password:', str, '')], title='Enter database credentials', cancelallowed=True)
         # if we fail
@@ -115,8 +118,6 @@ class echemvisDialog(QtGui.QMainWindow):
             idialog.exec_()
             return 0
             
-
-
     def selectmethod(self,folderpath=None):
         # we didn't select a method, so we return to the main gui
         if not self.methodSetter(folderpath):
@@ -243,8 +244,7 @@ class echemvisDialog(QtGui.QMainWindow):
 ################################################################################
 ######################### selectdbsessionsDialog class #########################
 ################################################################################
-
-""" TODO """            
+           
 class selectdbsessionsDialog(QtGui.QDialog):
     def __init__(self, parent, ex_trange_techl, maxsessions=15, title='Select DB experiment sessions to analyze'):
         super(selectdbsessionsDialog, self).__init__(parent)
@@ -276,10 +276,10 @@ class selectdbsessionsDialog(QtGui.QDialog):
         self.buttonBox.setGeometry(QtCore.QRect(520, 195, 160, 26))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
-        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
+        self.buttonBox.accepted.`(self.accept)
+        self.buttonBox.accepted.connect(self.ExitRoutine)
+        
         self.mainLayout.addWidget(self.buttonBox)
-         
-        QtCore.QObject.connect(self.buttonBox,QtCore.SIGNAL("accepted()"),self.ExitRoutine)
         self.setLayout(self.mainLayout)
         QtCore.QMetaObject.connectSlotsByName(self)
         
@@ -316,10 +316,10 @@ class userinputDialog(QtGui.QDialog):
         self.buttonBox.setGeometry(QtCore.QRect(520, 195, 160, 26))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
-        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.accepted.connect(self.ExitRoutine)
+        
         self.mainLayout.addWidget(self.buttonBox, 2, 0, len(inputs), 1)
-         
-        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.ExitRoutine)
         self.setLayout(self.mainLayout)
     
         QtCore.QMetaObject.connectSlotsByName(self)
@@ -359,12 +359,11 @@ class messageDialog(QtGui.QDialog):
         self.buttonBox.setGeometry(QtCore.QRect(520, 195, 160, 26))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok)
-        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
-        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.reject)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.accepted.connect(self.ExitRoutine)
+        self.buttonBox.rejected.connect(self.reject)
+        
         self.mainLayout.addWidget(self.buttonBox, 0, 0)
-         
-        QtCore.QObject.connect(self.buttonBox,QtCore.SIGNAL("accepted()"),self.ExitRoutine)
-
         self.setLayout(self.mainLayout)
         
     def ExitRoutine(self):
