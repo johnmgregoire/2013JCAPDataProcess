@@ -10,11 +10,6 @@ sys.path.append("C:\Users\dhernand\Documents\GitHub\JCAPPyDBComm")
 import mysql_dbcommlib 
 
 
-"""         TODOs:
-            - If nothing is selected, give an error!!
-            - Get the exits to work!
-"""
-
 ################################################################################
 ############################ echemvisDialog class ##############################
 ################################################################################
@@ -58,8 +53,8 @@ class echemvisDialog(QtGui.QMainWindow):
 
         self.progButton.clicked.connect(self.selectProgram)
         self.methodButton.pressed.connect(self.selectmethod)
-        QtCore.QObject.connect(self.folderButton, QtCore.SIGNAL("pressed()"), self.selectfolder)
-        QtCore.QObject.connect(self.runButton, QtCore.SIGNAL("pressed()"), self.selectrun)
+        self.folderButton.pressed.connect(self.selectfolder)
+        self.runButton.pressed.connect(self.selectrun)
 
         self.mainLayout.addWidget(self.progButton,0,0)
         self.mainLayout.addWidget(self.prog_label,1,0)
@@ -84,9 +79,9 @@ class echemvisDialog(QtGui.QMainWindow):
     def methodSetter(self, folderpath = None):
         if folderpath is None:
             self.dbdatasource_temp=userinputcaller(self.parent, inputs=[('DBsource?', bool, '1')], title='Change to 0 to read for local harddrive.')
-            # if self.dbdatasource_temp is NONE then you hit the exit and so you should quit the program
+            # if we didn't select a method and clicked exit instead - exit the process by returning 0
             if not self.dbdatasource_temp:
-                QtGui.QApplication.exit()
+                return 0
             self.dbdatasource = self.dbdatasource_temp[0]
             if self.dbdatasource:
                 self.dbc=None
@@ -95,6 +90,8 @@ class echemvisDialog(QtGui.QMainWindow):
          
         self.plate_id=None
         self.selectexids=None
+
+        return 1
         
 
     def filePathDecider(self, folderpath=None):
@@ -106,28 +103,37 @@ class echemvisDialog(QtGui.QMainWindow):
 
 
     def createdbsession(self):
-        ans=userinputcaller(self, inputs=[('user:', str, ''), ('password:', str, '')], title='Enter database credentials', cancelallowed=True)
+        ans=userinputcaller(self.parent, inputs=[('user:', str, ''), ('password:', str, '')], title='Enter database credentials', cancelallowed=True)
+        # if we fail
         if ans is None:
-            return
-        self.dbc=mysql_dbcommlib.dbcomm(user=ans[0].strip(), password=ans[1].strip(),db='hte_echemdrop_proto')
+            return 0
+        try:
+            self.dbc=mysql_dbcommlib.dbcomm(user=ans[0].strip(), password=ans[1].strip(),db='hte_echemdrop_proto')
+            return 1
+        except:
+            idialog=messageDialog(self.parent, 'database credentials appear incorrect')
+            idialog.exec_()
+            return 0
+            
 
 
     def selectmethod(self,folderpath=None):
-        self.methodSetter(folderpath)
+        # we didn't select a method, so we return to the main gui
+        if not self.methodSetter(folderpath):
+            return
 
-        # We can show the folder button since we decided to manually select files
+        # show the folder button since we decided to manually select files
         if not self.dbdatasource:
             self.folderButton.show()
         else:
             self.folderButton.hide()
             
+        # get the paths for the files of interest
         self.filePathDecider(folderpath)
 
     def selectrun(self):
-        print "You selected the run button"
         if self.paths:
             if self.progModule:
-                pass
                 self.automator = fomautomator.FOMAutomator(self.paths, self.progModule)
                 self.automator.runParallel()
                                  
@@ -147,13 +153,14 @@ class echemvisDialog(QtGui.QMainWindow):
                 self.message_label.setText("")
                 self.files_label.setText("")
 
-            self.createdbsession()
+            if not self.createdbsession():
+                return 0
             
             if plate_id is None:
-                ans=userinputcaller(self, inputs=[('plate ID:', int, '632')], title='Enter plate ID for analysis', cancelallowed=not self.plate_id is None)[0]
+                ans=userinputcaller(self.parent, inputs=[('plate ID:', int, '')], title='Enter plate ID for analysis', cancelallowed=True)
                 if ans is None:
-                    return
-                self.plate_id=ans
+                    return 0
+                self.plate_id=ans[0]
             else:
                 self.plate_id=plate_id
 
@@ -189,6 +196,7 @@ class echemvisDialog(QtGui.QMainWindow):
             self.paths = thepaths
             # we have some things to run, so we can show the button
             self.runButton.show()
+        return 1
 
     """ gets the path info and returns them as a list """
     def getPathInfo(self, ext='.txt'):
