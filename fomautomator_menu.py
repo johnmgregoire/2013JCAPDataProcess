@@ -94,6 +94,7 @@ class echemvisDialog(QtGui.QMainWindow):
             self.dbdatasource=0
          
         self.plate_id=None
+        self.selectexids=None
         
 
     def filePathDecider(self, folderpath=None):
