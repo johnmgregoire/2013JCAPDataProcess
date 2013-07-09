@@ -8,6 +8,7 @@ from multiprocessing import Process, Pool
 from inspect import *
 from rawdataparser import *
 import jsontranslator
+import xmltranslator
 import importlib
 import distutils.util
 import itertools
@@ -184,7 +185,8 @@ class FileRunner(object):
                                                 in funcToRun.func_code.co_varnames[fdict['numdictargs']:funcToRun.func_code.co_argcount]])))
                     self.FOMs[('_').join(map(str, varset))+'_'+fname] = fom
         # temporary function to monitor program's output
-        self.testWithJSON(self.txtfile)
+        self.testWithXML(self.txtfile)
+        return
 
     def accessDict(self, fname, varset, argname):
         fdict = self.fdicts.get(fname)
@@ -210,3 +212,10 @@ class FileRunner(object):
         savepath = jsontranslator.toJSON(expfilename+'v1',
                                          self.FOMs, self.interData, self.params)
         jsontranslator.fromJSON(savepath)
+
+    def testWithXML(self, expfilepath):
+        expfilename = os.path.split(expfilepath)[1][:-4]
+        savepath = os.path.join('C:\Users\shubauer\Desktop\Working folder\AutoAnalysisXML',
+                                expfilename+'v1.xml')
+        dataTup = (self.FOMs, self.interData, self.params)
+        xmltranslator.toXML(savepath, '1', dataTup)

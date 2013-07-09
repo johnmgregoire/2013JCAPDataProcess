@@ -96,9 +96,9 @@ def CalcIllDiff(rawd, interd, illum='Illum', thisvar=['Ewe(V)', 'I(A)'],
     if err:
         # if this is not an illumination experiment, intermediate
         #   illumination values aren't necessary (ASK JOHN)
-        for illIntermed in filter(lambda intermed: 'ill' in intermed.lower(),
+        """for illIntermed in filter(lambda intermed: 'ill' in intermed.lower(),
                                   interd.keys()):
-            del(interd[illIntermed])
+            del(interd[illIntermed])"""
         return 0.
     if fomName == 'min':
         return min(interd[thisvar+'_illdiff'])

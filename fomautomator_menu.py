@@ -6,7 +6,7 @@ import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
 import fomautomator
 
-sys.path.append("C:\Users\dhernand\Documents\GitHub\JCAPPyDBComm")
+sys.path.append("C:\Users\shubauer\Documents\GitHub\JCAPPyDBComm")
 import mysql_dbcommlib 
 
 
@@ -54,7 +54,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.progButton.clicked.connect(self.selectProgram)
         self.methodButton.pressed.connect(self.selectmethod)
         self.folderButton.pressed.connect(self.selectfolder)
-        self.runButton.pressed.connect(self.selectrun)
+        self.runButton.pressed.connect(self.startAutomation)
 
         self.mainLayout.addWidget(self.progButton,0,0)
         self.mainLayout.addWidget(self.prog_label,1,0)
@@ -131,11 +131,21 @@ class echemvisDialog(QtGui.QMainWindow):
         # get the paths for the files of interest
         self.filePathDecider(folderpath)
 
-    def selectrun(self):
+
+    def startAutomation(self):
         if self.paths:
+            if self.prevVersion:
+                xmlFiles = map(lambda p: os.path.join(XML_DIR, p),
+                               filter(lambda f: f.endswith('.xml'), os.listdir(XML_DIR)))
+            else:
+                xmlFiles = []
             if self.progModule:
-                self.automator = fomautomator.FOMAutomator(self.paths, self.progModule)
+                self.automator = fomautomator.FOMAutomator(self.files, xmlFiles,
+                                                           self.versionName,
+                                                           self.prevVersion,
+                                                           self.progModule)
                 self.automator.runParallel()
+
                                  
     def selectfolder(self, plate_id=None, selectexids=None, folder=None):
         # hide the run, we're in process of selecting files.
@@ -226,18 +236,30 @@ class echemvisDialog(QtGui.QMainWindow):
 
     def selectProgram(self):
         self.programDialog = QtGui.QFileDialog(self,
-                                               caption = "Select a version folder containing data analysis scripts")
+                                               caption = "Select a version folder containing data analysis scripts",
+                                               directory = FUNC_DIR)
         self.programDialog.setFileMode(QtGui.QFileDialog.Directory)
         # if user clicks 'Choose'
         if self.programDialog.exec_():
             # list of QStrings (only one folder is allowed to be selected)
             dirList = self.programDialog.selectedFiles()
             targetDir = str(dirList[0])
-            self.prog_label.setText(targetDir)
+            self.progSelected.setText(targetDir)
+            # check targetDir for the target module first
+            sys.path.insert(0, targetDir)
             pyFiles = filter(lambda f: f.endswith('.py'), os.listdir(targetDir))
-            # THIS IS TEMPORARY
-            self.progModule = [mod[:-3] for mod in pyFiles if
-                               mod == 'fomfunctions_firstversion.py'][0]
+            self.progModule = [os.path.splitext(mod)[0] for mod in pyFiles if
+                               mod == 'fomfunctions.py'][0]
+            self.versionName = os.path.basename(targetDir)
+            print 'current version:', self.versionName
+            funcDir = os.listdir(FUNC_DIR)
+            funcDir.sort()
+            verIndex = funcDir.index(self.versionName)
+            if verIndex > 0:
+                self.prevVersion = funcDir[verIndex-1]
+            else:
+                self.prevVersion = ''
+            print 'previous version:', self.prevVersion
 
 
 ################################################################################
