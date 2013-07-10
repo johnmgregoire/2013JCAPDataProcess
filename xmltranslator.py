@@ -20,8 +20,13 @@ def toXML(filepath, verNum, dictTup):
                             type(val[0]).__name__)
             else:
                 fignode.set("type", type(val).__name__)
-    treeToFile = etree.ElementTree(root)
-    treeToFile.write(filepath, pretty_print=True)
+    xmlHeader = """<?xml version="1.0"?>
+<!DOCTYPE note SYSTEM "fomdata.dtd">
+"""
+    with open(filepath, 'w') as xmlfile:
+        xmlfile.write(xmlHeader)
+        treeToFile = etree.ElementTree(root)
+        treeToFile.write(xmlfile, pretty_print=True)
     return root
 
 # NOTE: There's a loss of precision in converting floats to strings

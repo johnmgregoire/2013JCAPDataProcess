@@ -8,7 +8,7 @@ import cPickle as pickle
 import numpy
 import os
 
-SAVEPATH = 'C:\Users\shubauer\Desktop\Working folder\AutoAnalysisPck'
+RAW_DATA_PATH = 'C:\Users\shubauer\Desktop\Working folder\AutoAnalysisPck'
 
 """ read all raw data from file into dictionary """
 def readechemtxt(path):
@@ -93,7 +93,7 @@ def readechemtxt(path):
     # get filename from path, remove '.txt' at end
     # TO DO: save this in a specific folder
     filecode = os.path.split(path)[1][:-4]
-    savepath = os.path.join(SAVEPATH, filecode+'.pck')
+    savepath = os.path.join(RAW_DATA_PATH, filecode+'.pck')
     with open(savepath, 'wb') as savefile:
         pickle.dump(rawData, savefile)
     return savepath

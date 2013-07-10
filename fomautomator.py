@@ -1,4 +1,4 @@
-sh# Allison Schubauer and Daisy Hernandez
+# Allison Schubauer and Daisy Hernandez
 # 6/26/2013
 # runs functions to produce figures of merit automatically, and
 #   replaces dictionaries of data produced by old versions with
@@ -111,6 +111,7 @@ def makeFileRunner(args):
 class FileRunner(object):
     def __init__(self, expfile, xmlpath, version, lastversion, modname, newparams, funcdicts):
         self.txtfile = expfile
+        self.expfilename = os.path.splitext(os.path.split(self.txtfile)[1])[0]
         self.version = version
         self.modname = modname
         self.fdicts = funcdicts
@@ -123,15 +124,21 @@ class FileRunner(object):
             self.FOMs, self.interData, self.params = {}, {}, {}
         for param in newparams:
             self.params[param] = newparams[param]
+        # look for raw data dictionary before creating one from the text file
+        try:
+            rawdatafile = os.path.join(RAW_DATA_PATH,
+                                       [fname for fname in os.listdir(RAW_DATA_PATH)
+                                        if self.expfilename in fname][0])
+        except IndexError:
+            #print "brand new file"
+            rawdatafile = readechemtxt(self.txtfile)            
+        with open(rawdatafile) as rawdata:
+            self.rawData = pickle.load(rawdata)
         self.run()
 
     def run(self):
         funcMod = __import__(self.modname)
         allFuncs = [f[1] for f in getmembers(funcMod, isfunction)]
-        # RUN ON ONE FILE
-        rawdatafile = readechemtxt(self.txtfile)
-        with open(rawdatafile) as rawdata:
-            self.rawData = pickle.load(rawdata)
         validDictArgs = [self.rawData, self.interData]
         expType = self.rawData.get('BLTechniqueName')
         print 'expType:', expType
@@ -161,7 +168,7 @@ class FileRunner(object):
                                                 in funcToRun.func_code.co_varnames[fdict['numdictargs']:funcToRun.func_code.co_argcount]])))
                     self.FOMs[('_').join(map(str, varset))+'_'+fname] = fom
         # temporary function to monitor program's output
-        self.saveXML(self.txtfile)
+        self.saveXML()
         return
 
     def accessDict(self, fname, varset, argname):
@@ -183,8 +190,7 @@ class FileRunner(object):
                 #   the committer
                 print argname, "is not a valid argument"
 
-    def saveXML(self, expfilepath):
-        expfilename = os.path.splitext(os.path.split(expfilepath)[1])[0]
-        savepath = os.path.join(XML_DIR, expfilename+'.xml')
+    def saveXML(self):
+        savepath = os.path.join(XML_DIR, self.expfilename+'.xml')
         dataTup = (self.FOMs, self.interData, self.params)
         xmltranslator.toXML(savepath, self.version, dataTup)
