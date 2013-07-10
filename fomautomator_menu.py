@@ -161,7 +161,7 @@ class echemvisDialog(QtGui.QMainWindow):
             # since we're doing the database, hide some buttons
             self.folderButton.hide()
             if not self.dbc is None:
-                print "closing old setion"
+                print "closing old session"
                 self.dbc.close()
                 self.message_label.setText("")
                 self.files_label.setText("")
@@ -231,7 +231,6 @@ class echemvisDialog(QtGui.QMainWindow):
         
         exset=sorted(list(set(ex)))
         ex_trange_techl=[(exv, numpy.sort(t[ex==exv])[[0,-1]], list(set(tn[[ex==exv]]))) for exv in exset]
-        
         idialog=selectdbsessionsDialog(self, ex_trange_techl=ex_trange_techl)
         idialog.exec_()
         exsetinds=idialog.selectinds
