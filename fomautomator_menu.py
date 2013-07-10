@@ -9,6 +9,7 @@ import sys
 import numpy
 import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
+from fomautomator import FUNC_DIR, XML_DIR
 import fomautomator
 
 sys.path.append("C:\Users\shubauer\Documents\GitHub\JCAPPyDBComm")
@@ -45,6 +46,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.mainWidget.setLayout(self.mainLayout)
 
         self.prog_label = QtGui.QLineEdit()
+        self.prog_label.setReadOnly(True)
         self.message_label = QtGui.QLabel()
         self.files_label = QtGui.QLabel()
         self.message_label.setText("Which files would you like to run your analysis on?")
@@ -141,7 +143,7 @@ class echemvisDialog(QtGui.QMainWindow):
             else:
                 xmlFiles = []
             if self.progModule:
-                self.automator = fomautomator.FOMAutomator(self.files, xmlFiles,
+                self.automator = fomautomator.FOMAutomator(self.paths, xmlFiles,
                                                            self.versionName,
                                                            self.prevVersion,
                                                            self.progModule)
@@ -245,7 +247,7 @@ class echemvisDialog(QtGui.QMainWindow):
             # list of QStrings (only one folder is allowed to be selected)
             dirList = self.programDialog.selectedFiles()
             targetDir = str(dirList[0])
-            self.progSelected.setText(targetDir)
+            self.prog_label.setText(targetDir)
             # check targetDir for the target module first
             sys.path.insert(0, targetDir)
             pyFiles = filter(lambda f: f.endswith('.py'), os.listdir(targetDir))
@@ -298,7 +300,7 @@ class selectdbsessionsDialog(QtGui.QDialog):
         self.buttonBox.setGeometry(QtCore.QRect(520, 195, 160, 26))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
-        self.buttonBox.accepted.`(self.accept)
+        self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.accepted.connect(self.ExitRoutine)
         
         self.mainLayout.addWidget(self.buttonBox)
