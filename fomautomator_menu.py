@@ -12,7 +12,7 @@ import PyQt4.QtGui as QtGui
 from fomautomator import FUNC_DIR, XML_DIR
 import fomautomator
 
-sys.path.append("C:\Users\shubauer\Documents\GitHub\JCAPPyDBComm")
+sys.path.append("C:\Users\dhernand\Documents\GitHub\JCAPPyDBComm")
 import mysql_dbcommlib 
 
 """ TODO: Merge with error loggger? """
@@ -208,7 +208,8 @@ class echemvisDialog(QtGui.QMainWindow):
         if thepaths:
             self.paths = thepaths
             # we have some things to run, so we can show the button
-            self.runButton.show()
+            if self.progModule: 
+                self.runButton.show()
         return 1
 
     """ gets the path info and returns them as a list """
@@ -262,6 +263,9 @@ class echemvisDialog(QtGui.QMainWindow):
             else:
                 self.prevVersion = ''
             print 'previous version:', self.prevVersion
+
+            if self.paths and self.progModule:
+                self.runButton.show()
 
 
 ################################################################################
