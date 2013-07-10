@@ -1,4 +1,4 @@
-# Allison Schubauer and Daisy Hernandez
+sh# Allison Schubauer and Daisy Hernandez
 # 6/26/2013
 # runs functions to produce figures of merit automatically, and
 #   replaces dictionaries of data produced by old versions with
@@ -185,7 +185,6 @@ class FileRunner(object):
 
     def saveXML(self, expfilepath):
         expfilename = os.path.splitext(os.path.split(expfilepath)[1])[0]
-        savepath = os.path.join('C:\Users\shubauer\Desktop\Working folder\AutoAnalysisXML',
-                                expfilename+'.xml')
+        savepath = os.path.join(XML_DIR, expfilename+'.xml')
         dataTup = (self.FOMs, self.interData, self.params)
         xmltranslator.toXML(savepath, self.version, dataTup)
