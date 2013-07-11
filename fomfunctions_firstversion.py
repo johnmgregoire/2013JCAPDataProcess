@@ -10,16 +10,16 @@ import intermediatefunctions_firstversion as inter
 # this dictionary is required to know which figures of merit should
 #   be calculated for each type of experiment
 # TO DO: come up with a better naming convention for this dictionary
-validFuncs = {'CV': {'getMax': [['I(A)']], 'getMin': [['I(A)']], 'CalcE_IThresh': [],
-                     'CalcIllDiff': [['I(A)', 'max'], ['I(A)', 'min']]},
-              'OCV': {'getFinal': [['Ewe(V)']], 'CalcAvg': [['Ewe(V)']],
-                      'CalcArrSS': [['Ewe(V)']], 'CalcIllDiff': [['Ewe(V)', 'avg']]},
-              'CP': {'getFinal': [['Ewe(V)']], 'CalcAvg': [['Ewe(V)']],
-                     'CalcArrSS': [['Ewe(V)']], 'CalcIllDiff': [['Ewe(V)', 'avg']]},
-              'CA': {'getFinal': [['I(A)']], 'CalcAvg': [['I(A)']],
-                     'CalcArrSS': [['I(A)']], 'CalcIllDiff': [['I(A)', 'avg']]}}
+validFuncs = {'CV': {'Max': [['I(A)']], 'Min': [['I(A)']], 'E_IThresh': [],
+                     'IllDiff': [['I(A)', 'max'], ['I(A)', 'min']]},
+              'OCV': {'Final': [['Ewe(V)']], 'Avg': [['Ewe(V)']],
+                      'ArrSS': [['Ewe(V)']], 'IllDiff': [['Ewe(V)', 'avg']]},
+              'CP': {'Final': [['Ewe(V)']], 'Avg': [['Ewe(V)']],
+                     'ArrSS': [['Ewe(V)']], 'IllDiff': [['Ewe(V)', 'avg']]},
+              'CA': {'Final': [['I(A)']], 'Avg': [['I(A)']],
+                     'ArrSS': [['I(A)']], 'IllDiff': [['I(A)', 'avg']]}}
 
-def CalcArrSS(rawd, x=['Ewe(V)', 'I(A)'], weightExp=1., numTestPts=10):
+def ArrSS(rawd, x=['Ewe(V)', 'I(A)'], weightExp=1., numTestPts=10):
     x = rawd[x]
     i=numTestPts
     s0=x[:i].std()/i**weightExp+1
@@ -28,7 +28,7 @@ def CalcArrSS(rawd, x=['Ewe(V)', 'I(A)'], weightExp=1., numTestPts=10):
         i+=numTestPts
     return x[:i].mean()
 
-def CalcE_IThresh(rawd, i='I(A)', v='Ewe(V)', iThresh=1e-5, numConsecPts=20,
+def E_IThresh(rawd, i='I(A)', v='Ewe(V)', iThresh=1e-5, numConsecPts=20,
                   setAbove=1, noThresh=1.):
     i = rawd[i]
     v = rawd[v]
@@ -45,7 +45,7 @@ def CalcE_IThresh(rawd, i='I(A)', v='Ewe(V)', iThresh=1e-5, numConsecPts=20,
         # return value indicating threshold not reached
         return noThresh
 
-def CalcAvg(rawd, x=['Ewe(V)', 'I(A)'], t='t(s)', interval=1000, numStdDevs=2.,
+def Avg(rawd, x=['Ewe(V)', 'I(A)'], t='t(s)', interval=1000, numStdDevs=2.,
             numPts=1000, startAtEnd=0):
     x = rawd[x]
     t = rawd[t]
@@ -60,16 +60,16 @@ def CalcAvg(rawd, x=['Ewe(V)', 'I(A)'], t='t(s)', interval=1000, numStdDevs=2.,
     # the mean of the data now that outliers have been removed
     return x.mean()
 
-def getFinal(rawd, x=['Ewe(V)', 'I(A)']):
+def Final(rawd, x=['Ewe(V)', 'I(A)']):
     return rawd[x][-1]
     
-def getMax(rawd, x=['Ewe(V)', 'I(A)']):
+def Max(rawd, x=['Ewe(V)', 'I(A)']):
     return numpy.max(rawd[x])
 
-def getMin(rawd, x=['Ewe(V)', 'I(A)']):
+def Min(rawd, x=['Ewe(V)', 'I(A)']):
     return numpy.min(rawd[x])
 
-def CalcIllDiff(rawd, interd, illum='Illum', thisvar=['Ewe(V)', 'I(A)'],
+def IllDiff(rawd, interd, illum='Illum', thisvar=['Ewe(V)', 'I(A)'],
                 othervar='I(A)', t='t(s)', fomName=['min', 'max', 'avg'],
                 lightStart=0.4, lightEnd=0.95, darkStart =0.4, darkEnd=0.95,
                 illSigKey='Ach(V)', sigTimeShift=0., illThresh=0.8,

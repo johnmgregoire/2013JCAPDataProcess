@@ -19,13 +19,15 @@ FUNC_DIR = 'C://Users//shubauer//Desktop//Working folder//AutoAnalysisFunctions'
 XML_DIR = 'C://Users//shubauer//Desktop//Working folder//AutoAnalysisXML'
 
 class FOMAutomator(object):
-    def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion, funcModule):
+    def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
+                 funcModule, expTypes):
         # get version no.
         self.version = versionName
         self.lastVersion = prevVersion
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
-        self.allFuncs = [f[1] for f in getmembers(self.funcMod, isfunction)]
+        #self.allFuncs = [f[1] for f in getmembers(self.funcMod, isfunction)]
+        self.expTypes = expTypes
         self.files = []
         for rdpath in rawDataFiles:
             xmlpath = os.path.join(XML_DIR,
@@ -37,8 +39,8 @@ class FOMAutomator(object):
                 self.files.append((rdpath, ''))
 
     def runParallel(self):
-        self.processFuncs()
-        self.requestParams()
+        #self.processFuncs() #called by GUI
+        #self.requestParams() #handled separately by GUI
         processPool = Pool()
         jobs = [(filename, xmlpath, self.version, self.lastVersion,
                  self.modname, self.params, self.funcDicts)
@@ -50,12 +52,22 @@ class FOMAutomator(object):
     def processFuncs(self):
         self.params = {}
         self.funcDicts = {}
-        for func in self.allFuncs:
-            fname = func.func_name
+        self.allFuncs = []
+        for tech in self.expTypes:
+            techDict = self.funcMod.validFuncs.get(tech)
+            if techDict:
+                for func in techDict:
+                    if func not in self.allFuncs:
+                        self.allFuncs.append(func)
+        print self.allFuncs
+        for fname in self.allFuncs:
+            funcObj = [f[1] for f in getmembers(self.funcMod, isfunction) if
+                       f[0] == fname][0]
             funcdict = {'batchvars': [], 'params': []}
-            dictargs = func.func_code.co_argcount - len(func.func_defaults)
+            dictargs = funcObj.func_code.co_argcount - len(funcObj.func_defaults)
             funcdict['numdictargs'] = dictargs
-            arglist = zip(func.func_code.co_varnames[dictargs:], func.func_defaults)
+            arglist = zip(funcObj.func_code.co_varnames[dictargs:],
+                          funcObj.func_defaults)
             for arg, val in arglist:
                 if isinstance(val, list):
                     funcdict['batchvars'].append(arg)
@@ -71,19 +83,27 @@ class FOMAutomator(object):
                     funcdict['params'].append(arg)
                     funcdict['#'+arg] = val
             self.funcDicts[fname] = funcdict
+        return self.funcDicts
 
-    def requestParams(self):
-        for fname in self.funcDicts.keys():
-            fdict = self.funcDicts[fname]
-            if fdict.get('params'):
-                #usedefault = distutils.util.strtobool(raw_input("Use default parameters for "+fname+"? "))
-                # uncomment ^ this line to take parameters from user
-                usedefault = True #THIS IS FOR TESTING ONLY
-                if not usedefault:
-                    for param in fdict.get('params'):
-                        newval = raw_input(param+": ")
-                        self.params[fname+'_'+param] = attemptnumericconversion(newval)
-                        fdict['#'+param] = attemptnumericconversion(newval)
+def setParams(self, funcNames, paramsList):
+    for fname, params in zip(funcNames, paramsList):
+        fdict = self.funcDicts[fname]
+        for param, val in params:
+            fdict['#'+param] = val
+            self.params[fname+'_'+param] = val
+
+##    def requestParams(self):
+##        for fname in self.funcDicts.keys():
+##            fdict = self.funcDicts[fname]
+##            if fdict.get('params'):
+##                usedefault = distutils.util.strtobool(raw_input("Use default parameters for "+fname+"? "))
+##                # uncomment ^ this line to take parameters from user
+##                #usedefault = True #THIS IS FOR TESTING ONLY
+##                if not usedefault:
+##                    for param in fdict.get('params'):
+##                        newval = raw_input(param+": ")
+##                        self.params[fname+'_'+param] = attemptnumericconversion(newval)
+##                        fdict['#'+param] = attemptnumericconversion(newval)
 
     def accessDict(self, fname, varset, argname):
         fdict = self.funcDicts.get(fname)

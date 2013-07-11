@@ -6,13 +6,14 @@
 import time
 import os, os.path
 import sys
+import itertools, re
 import numpy
 import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
 from fomautomator import FUNC_DIR, XML_DIR
 import fomautomator
 
-sys.path.append("C:\Users\dhernand\Documents\GitHub\JCAPPyDBComm")
+sys.path.append("C:\Users\shubauer\Documents\GitHub\JCAPPyDBComm")
 import mysql_dbcommlib 
 
 """ TODO: Merge with error loggger? """
@@ -146,8 +147,12 @@ class echemvisDialog(QtGui.QMainWindow):
                 self.automator = fomautomator.FOMAutomator(self.paths, xmlFiles,
                                                            self.versionName,
                                                            self.prevVersion,
-                                                           self.progModule)
-                self.automator.runParallel()
+                                                           self.progModule,
+                                                           self.exptypes)
+                funcDict = self.automator.processFuncs()
+                funcNames, paramsList = getParamsDialog(self.parent, funcDict)
+                self.automator.setParams(funcNames, paramsList)
+                #self.automator.runParallel()
 
                                  
     def selectfolder(self, plate_id=None, selectexids=None, folder=None):
@@ -208,8 +213,7 @@ class echemvisDialog(QtGui.QMainWindow):
         if thepaths:
             self.paths = thepaths
             # we have some things to run, so we can show the button
-            if self.progModule: 
-                self.runButton.show()
+            self.runButton.show()
         return 1
 
     """ gets the path info and returns them as a list """
@@ -236,6 +240,13 @@ class echemvisDialog(QtGui.QMainWindow):
         idialog.exec_()
         exsetinds=idialog.selectinds
         self.selectexids=[exset[i] for i in exsetinds]
+        exptypelist = [ex_trange_techl[i][2] for i in exsetinds]
+        self.exptypes = []
+        for tech in itertools.chain(*exptypelist):
+            techname = re.sub('\d+', '', tech).rstrip()
+            if techname not in self.exptypes:
+                self.exptypes.append(techname)
+        print self.exptypes
 
     def selectProgram(self):
         self.programDialog = QtGui.QFileDialog(self,
@@ -264,8 +275,34 @@ class echemvisDialog(QtGui.QMainWindow):
                 self.prevVersion = ''
             print 'previous version:', self.prevVersion
 
-            if self.paths and self.progModule:
-                self.runButton.show()
+
+################################################################################
+############################ getParamsDialog class #############################
+################################################################################
+class getParamsDialog(QtGui.QDialog):
+    def __init__(self, parent, automatorFuncDict):
+        super(getParamsDialog, self).__init__(parent)
+        self.setWindowTitle("Change function parameters")
+        self.mainLayout = QtGui.QGridLayout() #or vertical layout?
+        self.funcNames = automatorFuncDict.keys()
+        self.funcNames.sort()
+        print self.funcNames
+        # nested list - each sub-list is list of (param name, value) tuples for
+        #   corresponding function
+        self.params = [[(pname, pval) for pname in automatorFuncDict[fname]['params']
+                        for pval in [automatorFuncDict[fname]['#'+pname]]]
+                       for fname in self.funcNames]
+        print self.params
+        for funcname, paramlist in zip(self.funcNames, self.params):
+            # make label with function name
+            # make label for each parameter
+            # make text input for parameter with pval as default text
+            # when enter is clicked, save new parameter values in self.params
+            # fomautomator.attemptnumericconversion(str) can be used on the
+            #   input from the LineEdits - the function itself is defined in the
+            #   rawdataparser module
+            # send (self.funcNames, self.params) back to main dialog
+            pass
 
 
 ################################################################################
