@@ -15,9 +15,12 @@ import importlib
 import distutils.util
 import itertools
 
-FUNC_DIR = 'C://Users//shubauer//Desktop//Working folder//AutoAnalysisFunctions'
-XML_DIR = 'C://Users//shubauer//Desktop//Working folder//AutoAnalysisXML'
-
+if os.path.exists('C://Users//dhernand//Desktop//Working folder//AutoAnalysisFunctions'):
+    FUNC_DIR = 'C://Users//dhernand//Desktop//Working folder//AutoAnalysisFunctions'
+    XML_DIR = 'C://Users//dhernand//Desktop//Working folder//AutoAnalysisXML'
+else:
+    FUNC_DIR = 'C://Users//shubauer//Desktop//Working folder//AutoAnalysisFunctions'
+    XML_DIR = 'C://Users//shubauer//Desktop//Working folder//AutoAnalysisXML'
 class FOMAutomator(object):
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
                  funcModule, expTypes):
@@ -59,7 +62,7 @@ class FOMAutomator(object):
                 for func in techDict:
                     if func not in self.allFuncs:
                         self.allFuncs.append(func)
-        print self.allFuncs
+                        
         for fname in self.allFuncs:
             funcObj = [f[1] for f in getmembers(self.funcMod, isfunction) if
                        f[0] == fname][0]
@@ -68,6 +71,8 @@ class FOMAutomator(object):
             funcdict['numdictargs'] = dictargs
             arglist = zip(funcObj.func_code.co_varnames[dictargs:],
                           funcObj.func_defaults)
+
+            
             for arg, val in arglist:
                 if isinstance(val, list):
                     funcdict['batchvars'].append(arg)
@@ -85,10 +90,10 @@ class FOMAutomator(object):
             self.funcDicts[fname] = funcdict
         return self.funcDicts
 
-def setParams(self, funcNames, paramsList):
-    for fname, params in zip(funcNames, paramsList):
-        fdict = self.funcDicts[fname]
-        for param, val in params:
+    def setParams(self, funcNames, paramsList):
+        for fname, params in zip(funcNames, paramsList):
+            fdict = self.funcDicts[fname]
+            param,val = params
             fdict['#'+param] = val
             self.params[fname+'_'+param] = val
 
@@ -98,7 +103,7 @@ def setParams(self, funcNames, paramsList):
 ##            if fdict.get('params'):
 ##                usedefault = distutils.util.strtobool(raw_input("Use default parameters for "+fname+"? "))
 ##                # uncomment ^ this line to take parameters from user
-##                #usedefault = True #THIS IS FOR TESTING ONLY
+##             x   #usedefault = True #THIS IS FOR TESTING ONLY
 ##                if not usedefault:
 ##                    for param in fdict.get('params'):
 ##                        newval = raw_input(param+": ")

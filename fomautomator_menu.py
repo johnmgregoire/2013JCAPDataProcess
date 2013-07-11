@@ -13,7 +13,11 @@ import PyQt4.QtGui as QtGui
 from fomautomator import FUNC_DIR, XML_DIR
 import fomautomator
 
-sys.path.append("C:\Users\shubauer\Documents\GitHub\JCAPPyDBComm")
+if os.path.exists('C://Users//dhernand//Desktop//Working folder//AutoAnalysisFunctions'):
+    sys.path.append("C:\Users\dhernand\Documents\GitHub\JCAPPyDBComm")
+else:
+    sys.path.append("C:\Users\shubauer\Documents\GitHub\JCAPPyDBComm")
+    
 import mysql_dbcommlib 
 
 """ TODO: Merge with error loggger? """
@@ -150,8 +154,13 @@ class echemvisDialog(QtGui.QMainWindow):
                                                            self.progModule,
                                                            self.exptypes)
                 funcDict = self.automator.processFuncs()
-                funcNames, paramsList = getParamsDialog(self.parent, funcDict)
-                self.automator.setParams(funcNames, paramsList)
+                params = self.getParams(funcDict)
+                if not params:
+                    return 1
+                
+                funcNames, paramsList = params
+                
+                self.automator.setParams(funcNames, list(paramsList))
                 #self.automator.runParallel()
 
                                  
@@ -213,7 +222,8 @@ class echemvisDialog(QtGui.QMainWindow):
         if thepaths:
             self.paths = thepaths
             # we have some things to run, so we can show the button
-            self.runButton.show()
+            if self.progModule:
+                self.runButton.show()
         return 1
 
     """ gets the path info and returns them as a list """
@@ -275,34 +285,26 @@ class echemvisDialog(QtGui.QMainWindow):
                 self.prevVersion = ''
             print 'previous version:', self.prevVersion
 
+        if self.paths:
+            self.runButton.show()
 
-################################################################################
-############################ getParamsDialog class #############################
-################################################################################
-class getParamsDialog(QtGui.QDialog):
-    def __init__(self, parent, automatorFuncDict):
-        super(getParamsDialog, self).__init__(parent)
-        self.setWindowTitle("Change function parameters")
-        self.mainLayout = QtGui.QGridLayout() #or vertical layout?
+    def getParams(self,automatorFuncDict):
         self.funcNames = automatorFuncDict.keys()
         self.funcNames.sort()
-        print self.funcNames
-        # nested list - each sub-list is list of (param name, value) tuples for
-        #   corresponding function
-        self.params = [[(pname, pval) for pname in automatorFuncDict[fname]['params']
-                        for pval in [automatorFuncDict[fname]['#'+pname]]]
-                       for fname in self.funcNames]
-        print self.params
-        for funcname, paramlist in zip(self.funcNames, self.params):
-            # make label with function name
-            # make label for each parameter
-            # make text input for parameter with pval as default text
-            # when enter is clicked, save new parameter values in self.params
-            # fomautomator.attemptnumericconversion(str) can be used on the
-            #   input from the LineEdits - the function itself is defined in the
-            #   rawdataparser module
-            # send (self.funcNames, self.params) back to main dialog
-            pass
+        self.params_full = [[(fname,pname,type(pval),pval) for pname in automatorFuncDict[fname]['params']
+                    for pval in [automatorFuncDict[fname]['#'+pname]]]
+                   for fname in self.funcNames]
+
+        params_full_flat = [item for sublist in self.params_full for item in sublist]
+        params_input = [(pname,ptype,pval) for (fname,pname,ptype,pval) in params_full_flat]
+        params_names = [pname for (pname,ptype,pval) in params_input]
+        funcs_names = [fname for (fname,pname,ptype,pval) in params_full_flat]
+        ans=userinputcaller(self.parent, inputs=params_input, title='Enter Values:', cancelallowed=True)
+
+        if ans == None:
+            return None
+        
+        return funcs_names,[list(a) for a in zip(params_names,ans)]
 
 
 ################################################################################
@@ -367,23 +369,33 @@ class userinputDialog(QtGui.QDialog):
         self.parent=parent
         self.inputs=inputs
         self.lelist=[]
+
+        numInputs = len(self.inputs)
+        row = 0
+        
         for i, tup in enumerate(self.inputs):
+            widthNum = 4
+            col = i%widthNum
             lab=QtGui.QLabel()
             lab.setText(tup[0])
             le=QtGui.QLineEdit()
             if len(tup)>2:
-                le.setText(tup[2])
+                le.setText(str(tup[2]))
             self.lelist+=[le]
-            self.mainLayout.addWidget(lab, 0, i, 1, 1)
-            self.mainLayout.addWidget(le, 1, i, 1, 1)    
+            if col==0:
+                row+=2
+            self.mainLayout.addWidget(lab, row, col, 1, 1)
+            self.mainLayout.addWidget(le, row+1, col, 1, 1)
+        # Space from the button    
+        row+=2
         self.buttonBox = QtGui.QDialogButtonBox(self)
         self.buttonBox.setGeometry(QtCore.QRect(520, 195, 160, 26))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.accepted.connect(self.ExitRoutine)
-        
-        self.mainLayout.addWidget(self.buttonBox, 2, 0, len(inputs), 1)
+
+        self.mainLayout.addWidget(self.buttonBox, row, 0, len(inputs), 1)
         self.setLayout(self.mainLayout)
     
         QtCore.QMetaObject.connectSlotsByName(self)
