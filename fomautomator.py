@@ -15,6 +15,7 @@ import xmltranslator
 import importlib
 import distutils.util
 import itertools
+import path_helpers
 
 if os.path.exists('C://Users//dhernand//Desktop//Working folder//AutoAnalysisFunctions'):
     FUNC_DIR = 'C://Users//dhernand//Desktop//Working folder//AutoAnalysisFunctions'
@@ -238,12 +239,6 @@ class FileRunner(object):
         xmltranslator.toXML(savepath, self.version, dataTup)
 
 
-def pathGetter(folder, ext):
-    fns=os.listdir(folder)
-    pathstoread_temp=[os.path.join(folder, fn) for fn in fns if fn.endswith(ext)]
-    pathstoread = [os.path.normpath(path) for path in pathstoread_temp]
-    return pathstoread
-
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('-I','--inputfolder', type=str, help="The input folder", nargs=1)
@@ -255,7 +250,7 @@ def main(argv):
     args = vars(parser.parse_args(argv))
 
     if args["inputfolder"]:
-        print pathGetter(args["inputfolder"][0], 'txt')
+        print path_helpers.getFolderFiles(args["inputfolder"][0], 'txt')
 
 if __name__ == "__main__":
     main(sys.argv[1:])
