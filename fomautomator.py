@@ -6,9 +6,10 @@
 
 import sys, os
 import cPickle as pickle
-from multiprocessing import Process, Pool
+from multiprocessing import Process, Pool, Manager
 from inspect import *
 from rawdataparser import *
+from qhtest import *
 import jsontranslator
 import xmltranslator
 import importlib
@@ -44,13 +45,21 @@ class FOMAutomator(object):
     def runParallel(self):
         #self.processFuncs() #called by GUI
         #self.requestParams() #handled separately by GUI
+        pmanager = Manager()
+        loggingQueue = pmanager.Queue()
         processPool = Pool()
-        jobs = [(filename, xmlpath, self.version, self.lastVersion,
-                 self.modname, self.params, self.funcDicts)
+        handler = logging.FileHandler('test.log')
+        logFormat = logging.Formatter('%(message)s')
+        handler.setFormatter(logFormat)
+        fileLogger = QueueListener(loggingQueue, handler)
+        fileLogger.start()
+        jobs = [(loggingQueue, filename, xmlpath, self.version,
+                 self.lastVersion, self.modname, self.params, self.funcDicts)
                 for (filename, xmlpath) in self.files]
         processPool.map(makeFileRunner, jobs)
         processPool.close()
         processPool.join()
+        fileLogger.stop()
 
     def processFuncs(self):
         self.params = {}
@@ -134,7 +143,7 @@ def makeFileRunner(args):
     return FileRunner(*args)
 
 class FileRunner(object):
-    def __init__(self, expfile, xmlpath, version, lastversion, modname, newparams, funcdicts):
+    def __init__(self, queue, expfile, xmlpath, version, lastversion, modname, newparams, funcdicts):
         self.txtfile = expfile
         self.expfilename = os.path.splitext(os.path.split(self.txtfile)[1])[0]
         self.version = version
@@ -159,9 +168,9 @@ class FileRunner(object):
             rawdatafile = readechemtxt(self.txtfile)            
         with open(rawdatafile) as rawdata:
             self.rawData = pickle.load(rawdata)
-        self.run()
-
-    def run(self):
+##        self.run()
+##
+##    def run(self):
         funcMod = __import__(self.modname)
         allFuncs = [f[1] for f in getmembers(funcMod, isfunction)]
         validDictArgs = [self.rawData, self.interData]
@@ -194,6 +203,11 @@ class FileRunner(object):
                     self.FOMs[('_').join(map(str, varset))+'_'+fname] = fom
         # temporary function to monitor program's output
         self.saveXML()
+        processHandler = QueueHandler(queue)  
+        root = logging.getLogger()
+        root.setLevel('INFO')
+        root.addHandler(processHandler)
+        root.info('File %s completed' %self.expfilename)
         return
 
     def accessDict(self, fname, varset, argname):
