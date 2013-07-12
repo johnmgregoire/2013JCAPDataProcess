@@ -4,7 +4,7 @@
 #   replaces dictionaries of data produced by old versions with
 #   updated data
 
-import sys, os
+import sys, os, argparse
 import cPickle as pickle
 from multiprocessing import Process, Pool, Manager
 from inspect import *
@@ -236,3 +236,26 @@ class FileRunner(object):
         savepath = os.path.join(XML_DIR, self.expfilename+'.xml')
         dataTup = (self.FOMs, self.interData, self.params)
         xmltranslator.toXML(savepath, self.version, dataTup)
+
+
+def pathGetter(folder, ext):
+    fns=os.listdir(folder)
+    pathstoread_temp=[os.path.join(folder, fn) for fn in fns if fn.endswith(ext)]
+    pathstoread = [os.path.normpath(path) for path in pathstoread_temp]
+    return pathstoread
+
+def main(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-I','--inputfolder', type=str, help="The input folder", nargs=1)
+    parser.add_argument('-i', '--inputfile',  type=str, help="The input file",  nargs=1)
+    parser.add_argument('-f', '--askabout', type=str, help="File containing input files", nargs=1)
+    parser.add_argument('-J','--jobname', type=str, help="The job_name", nargs=1)
+    parser.add_argument('-O', '--outputfolder', type=str, help="The output folder", nargs=1)
+    parser.add_argument('-X', '--errornum', type=int, help="The maximum number of errors", nargs=1)
+    args = vars(parser.parse_args(argv))
+
+    if args["inputfolder"]:
+        print pathGetter(args["inputfolder"][0], 'txt')
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
