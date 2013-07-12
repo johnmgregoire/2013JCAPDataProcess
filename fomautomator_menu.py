@@ -161,7 +161,10 @@ class echemvisDialog(QtGui.QMainWindow):
                 funcNames, paramsList = params
                 
                 self.automator.setParams(funcNames, list(paramsList))
-                #self.automator.runParallel()
+                print funcNames
+                print
+                print paramsList
+                self.automator.runParallel()
 
                                  
     def selectfolder(self, plate_id=None, selectexids=None, folder=None):
@@ -291,22 +294,27 @@ class echemvisDialog(QtGui.QMainWindow):
     def getParams(self,automatorFuncDict):
         self.funcNames = automatorFuncDict.keys()
         self.funcNames.sort()
-        self.params_full = [[(fname,pname,type(pval),pval) for pname in automatorFuncDict[fname]['params']
-                    for pval in [automatorFuncDict[fname]['#'+pname]]]
-                   for fname in self.funcNames]
+        self.params_full = [[ fname, [(pname,type(pval),pval) for pname in automatorFuncDict[fname]['params']
+                             for pval in [automatorFuncDict[fname]['#'+pname]]]]
+                            for fname in self.funcNames if automatorFuncDict[fname]['params'] != []]
 
-        params_full_flat = [item for sublist in self.params_full for item in sublist]
-        params_input = [(pname,ptype,pval) for (fname,pname,ptype,pval) in params_full_flat]
-        params_names = [pname for (pname,ptype,pval) in params_input]
-        funcs_names = [fname for (fname,pname,ptype,pval) in params_full_flat]
-        ans=userinputcaller(self.parent, inputs=params_input, title='Enter Values:', cancelallowed=True)
 
-        if ans == None:
-            return None
+        funcs_names =[]
+        funcs_params = []
+        funcs_ans = []
         
-        return funcs_names,[list(a) for a in zip(params_names,ans)]
+        for func in self.params_full:
+            ans=userinputcaller(self.parent, inputs=func[1], title='Enter Values for ' + str(func[0]), cancelallowed=True)
+            function_params = [pname for (pname,ptype,pval) in func[1]]
+            if ans == None:
+                return None
+            funcs_names += [func[0]]*len(func[1])
+            funcs_params += function_params
+            funcs_ans += ans
 
+        return funcs_names,[list(a) for a in zip(funcs_params,funcs_ans)]
 
+    
 ################################################################################
 ######################### selectdbsessionsDialog class #########################
 ################################################################################
