@@ -65,12 +65,15 @@ class FOMAutomator(object):
         self.params = {}
         self.funcDicts = {}
         self.allFuncs = []
-        for tech in self.expTypes:
-            techDict = self.funcMod.validFuncs.get(tech)
-            if techDict:
-                for func in techDict:
-                    if func not in self.allFuncs:
-                        self.allFuncs.append(func)
+        if self.expTypes:
+            for tech in self.expTypes:
+                techDict = self.funcMod.validFuncs.get(tech)
+                if techDict:
+                    for func in techDict:
+                        if func not in self.allFuncs:
+                            self.allFuncs.append(func)
+        else:
+            self.allFuncs = [f[0] for f in getmembers(self.funcMod, isfunction)]
                         
         for fname in self.allFuncs:
             funcObj = [f[1] for f in getmembers(self.funcMod, isfunction) if
@@ -88,7 +91,7 @@ class FOMAutomator(object):
                     funcdict['~'+arg] = val
                 #elif (val in RAW_DATA) or (val in INTER_DATA):
                 # we can't check this ^ if we process function before looking at data
-                # so instead just check if it's a string and assume it's data
+                # so intead just check if it's a string and assume it's data
                 #   (new version tester should verify this somehow)
                 elif isinstance(val, str):
                     funcdict[arg] = val

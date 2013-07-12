@@ -36,6 +36,7 @@ class echemvisDialog(QtGui.QMainWindow):
 
         self.paths = []
         self.progModule = None
+        self.exptypes = []
         self.initDB()
         self.initUI()
 
