@@ -12,6 +12,7 @@ import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
 from fomautomator import FUNC_DIR, XML_DIR
 import fomautomator
+import path_helpers
 
 if os.path.exists('C://Users//dhernand//Desktop//Working folder//AutoAnalysisFunctions'):
     sys.path.append("C:\Users\dhernand\Documents\GitHub\JCAPPyDBComm")
@@ -237,9 +238,7 @@ class echemvisDialog(QtGui.QMainWindow):
             pathstoread_temp=[os.path.join(os.path.join('J:/hte_echemdrop_proto/data','%d' %self.plate_id), fn) for fn in fns]
             pathstoread = [os.path.normpath(path) for path in pathstoread_temp]
         else:
-            fns=os.listdir(self.folderpath)
-            pathstoread_temp=[os.path.join(self.folderpath, fn) for fn in fns if fn.endswith(ext)]
-            pathstoread = [os.path.normpath(path) for path in pathstoread_temp]
+            pathstoread = path_helpers.getFolderFiles(self.folderpath,ext)
 
         return pathstoread
     

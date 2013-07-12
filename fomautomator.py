@@ -250,7 +250,7 @@ def main(argv):
     args = vars(parser.parse_args(argv))
 
     if args["inputfolder"]:
-        print path_helpers.getFolderFiles(args["inputfolder"][0], 'txt')
+        print path_helpers.getFolderFiles(args["inputfolder"][0], '.txt')
 
 if __name__ == "__main__":
     main(sys.argv[1:])
