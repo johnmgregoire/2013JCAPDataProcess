@@ -20,8 +20,8 @@ def toXML(filepath, verNum, dictTup):
                             type(val[0]).__name__)
             else:
                 fignode.set("type", type(val).__name__)
-    xmlHeader = """<?xml version="1.0"?>
-<!DOCTYPE note SYSTEM "fomdata.dtd">
+    xmlHeader = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE data SYSTEM "fomdata.dtd">
 """
     with open(filepath, 'w') as xmlfile:
         xmlfile.write(xmlHeader)
@@ -40,8 +40,13 @@ def getDataFromXML(filepath):
               "float32": numpy.float32, "float64": numpy.float64,
               "int32": numpy.int32, "int64": numpy.int64}
               #"bool": bool, "bool_": bool}
+    parser = etree.XMLParser(dtd_validation=True)
     with open(filepath, 'rb') as xmlfile:
-        docTree = etree.parse(xmlfile)
+        try:
+            docTree = etree.parse(xmlfile, parser)
+        except: #XMLSyntaxError
+            # raise error/write to error log
+            return
     version = docTree.getroot().get("version")
     fomTree = docTree.find("figures_of_merit")
     intermedTree = docTree.find("intermediate_values")
