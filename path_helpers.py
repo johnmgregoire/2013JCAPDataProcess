@@ -5,8 +5,6 @@
 
 import os
 
-def getFolderFiles(folder, ext):
-    fns=os.listdir(folder)
-    pathstoread_temp=[os.path.join(folder, fn) for fn in fns if fn.endswith(ext)]
-    pathstoread = [os.path.normpath(path) for path in pathstoread_temp]
-    return pathstoread
+def getFolderFiles(directory, ext):
+    return map(lambda p: os.path.normpath(os.path.join(directory, p)),
+                               filter(lambda f: f.endswith(ext), os.listdir(directory)))

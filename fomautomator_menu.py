@@ -145,8 +145,8 @@ class echemvisDialog(QtGui.QMainWindow):
     def startAutomation(self):
         if self.paths:
             if self.prevVersion:
-                xmlFiles = map(lambda p: os.path.join(XML_DIR, p),
-                               filter(lambda f: f.endswith('.xml'), os.listdir(XML_DIR)))
+                xmlFiles = path_helpers.getFolderFiles(XML_DIR,'.xml')
+                
             else:
                 xmlFiles = []
             if self.progModule:
@@ -163,9 +163,6 @@ class echemvisDialog(QtGui.QMainWindow):
                 funcNames, paramsList = params
                 
                 self.automator.setParams(funcNames, list(paramsList))
-                print funcNames
-                print
-                print paramsList
                 self.automator.runParallel()
 
                                  

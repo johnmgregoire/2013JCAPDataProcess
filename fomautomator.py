@@ -238,7 +238,6 @@ class FileRunner(object):
         dataTup = (self.FOMs, self.interData, self.params)
         xmltranslator.toXML(savepath, self.version, dataTup)
 
-
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('-I','--inputfolder', type=str, help="The input folder", nargs=1)
