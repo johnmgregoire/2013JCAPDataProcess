@@ -8,10 +8,8 @@ import cPickle as pickle
 import numpy
 import os
 
-if os.path.exists('C://Users//dhernand//Desktop//Working folder//AutoAnalysisFunctions'):
-    RAW_DATA_PATH = 'C:\Users\dhernand\Desktop\Working folder\AutoAnalysisPck'
-else:
-    RAW_DATA_PATH = 'C:\Users\shubauer\Desktop\Working folder\AutoAnalysisPck'
+RAW_DATA_PATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisPck")
+
 
 """ read all raw data from file into dictionary """
 def readechemtxt(path):

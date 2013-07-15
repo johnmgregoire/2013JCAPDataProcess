@@ -14,14 +14,10 @@ from fomautomator import FUNC_DIR, XML_DIR
 import fomautomator
 import path_helpers
 
-if os.path.exists('C://Users//dhernand//Desktop//Working folder//AutoAnalysisFunctions'):
-    sys.path.append("C:\Users\dhernand\Documents\GitHub\JCAPPyDBComm")
-else:
-    sys.path.append("C:\Users\shubauer\Documents\GitHub\JCAPPyDBComm")
+
+sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
     
 import mysql_dbcommlib 
-
-""" TODO: Merge with error loggger? """
 
 
 ################################################################################

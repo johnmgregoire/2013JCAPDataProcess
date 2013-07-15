@@ -10,7 +10,7 @@ import csv
 import json
 import numpy
 
-SAVEPATH = 'C:\Users\shubauer\Desktop\Working folder\AutoAnalysisJSON'
+SAVEPATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisJSON")
 
 def toJSON(filename, fomdict, intermeddict, inputdict):
     savepath = os.path.join(SAVEPATH, filename+'.json')

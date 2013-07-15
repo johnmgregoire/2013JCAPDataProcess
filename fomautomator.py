@@ -17,12 +17,9 @@ import distutils.util
 import itertools
 import path_helpers
 
-if os.path.exists('C://Users//dhernand//Desktop//Working folder//AutoAnalysisFunctions'):
-    FUNC_DIR = 'C://Users//dhernand//Desktop//Working folder//AutoAnalysisFunctions'
-    XML_DIR = 'C://Users//dhernand//Desktop//Working folder//AutoAnalysisXML'
-else:
-    FUNC_DIR = 'C://Users//shubauer//Desktop//Working folder//AutoAnalysisFunctions'
-    XML_DIR = 'C://Users//shubauer//Desktop//Working folder//AutoAnalysisXML'
+FUNC_DIR = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisFunctions")
+XML_DIR = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML")
+
 class FOMAutomator(object):
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
                  funcModule, expTypes):
