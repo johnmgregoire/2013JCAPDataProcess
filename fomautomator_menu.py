@@ -154,7 +154,7 @@ class echemvisDialog(QtGui.QMainWindow):
                 funcDict = self.automator.processFuncs()
                 params = self.getParams(funcDict)
                 if not params:
-                    return 1
+                    #return 1
                 
                 funcNames, paramsList = params
                 

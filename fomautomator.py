@@ -1,8 +1,13 @@
 # Allison Schubauer and Daisy Hernandez
-# 6/26/2013
-# runs functions to produce figures of merit automatically, and
-#   replaces dictionaries of data produced by old versions with
-#   updated data
+# Created: 6/26/2013
+# Last Updated: 7/15/2013
+# For JCAP
+
+"""
+    runs functions to produce figures of merit automatically, and
+    replaces dictionaries of data produced by old versions with
+    updated data
+"""
 
 import sys, os, argparse
 import cPickle as pickle
@@ -23,18 +28,17 @@ XML_DIR = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML")
 class FOMAutomator(object):
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
                  funcModule, expTypes):
-        # get version no.
+        # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
-        #self.allFuncs = [f[1] for f in getmembers(self.funcMod, isfunction)]
         self.expTypes = expTypes
         self.files = []
+
+        # setting up everything haveing to do with saving the XML files
         for rdpath in rawDataFiles:
-            xmlpath = os.path.join(XML_DIR,
-                                   os.path.splitext(os.path.basename(rdpath))[0]
-                                   +'.xml')
+            xmlpath = path_helpers.giveAltPathAndExt(XML_DIR,rdpath,'.xml')
             if xmlpath in xmlFiles:
                 self.files.append((rdpath, xmlpath))
             else:

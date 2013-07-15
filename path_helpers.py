@@ -20,3 +20,7 @@ def getARecentFolder(directory,num):
     else:
         return None
 
+""" gives an a a path to given directory and with the given extension but has
+    the same naming scheme as the given file """
+def giveAltPathAndExt(directory,currentpath,extension):
+     return os.path.join(directory,os.path.splitext(os.path.basename(currentpath))[0]+ extension)
