@@ -28,7 +28,7 @@ XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnal
 
 class FOMAutomator(object):
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
-                 funcModule, expTypes, outDir,rawDataDir):
+                 funcModule, expTypes, outDir, rawDataDir):
         
         # initializing all the basic info
         self.version = versionName
@@ -42,12 +42,8 @@ class FOMAutomator(object):
 
         # setting up everything having to do with saving the XML files
         for rdpath in rawDataFiles:
-<<<<<<< HEAD
-            xmlpath = path_helpers.giveAltPathAndExt(XML_DIR,rdpath,'.xml')
             print xmlpath
-=======
             xmlpath = path_helpers.giveAltPathAndExt(outDir,rdpath,'.xml')
->>>>>>> 99f6218d54186ab244bc5fafe0eb09df68372749
             if xmlpath in xmlFiles:
                 self.files.append((rdpath, xmlpath))
             else:
@@ -149,7 +145,8 @@ def makeFileRunner(args):
     return FileRunner(*args)
 
 class FileRunner(object):
-    def __init__(self, queue, expfile, xmlpath, version, lastversion, modname, newparams, funcdicts,outDir,rawDataDir):
+    def __init__(self, queue, expfile, xmlpath, version, lastversion, modname, newparams, funcdicts,
+                 outDir, rawDataDir):
         self.txtfile = expfile
         self.expfilename = os.path.splitext(os.path.split(self.txtfile)[1])[0]
         self.version = version
