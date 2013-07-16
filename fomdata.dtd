@@ -1,0 +1,10 @@
+<!ELEMENT data (figures_of_merit, intermediate_values, function_parameters)>
+<!ATTLIST data version CDATA #REQUIRED>
+<!ELEMENT figures_of_merit (figure*)>
+<!ELEMENT intermediate_values (figure*)>
+<!ELEMENT function_parameters (figure*)>
+<!ELEMENT figure (#PCDATA)>
+<!ATTLIST figure name CDATA #REQUIRED>
+<!ATTLIST figure type (int|float|bool) #REQUIRED>
+<!ATTLIST figure bits CDATA #REQUIRED>
+<!ATTLIST figure array_length CDATA #IMPLIED> 

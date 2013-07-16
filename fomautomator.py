@@ -37,9 +37,10 @@ class FOMAutomator(object):
         self.expTypes = expTypes
         self.files = []
 
-        # setting up everything haveing to do with saving the XML files
+        # setting up everything having to do with saving the XML files
         for rdpath in rawDataFiles:
             xmlpath = path_helpers.giveAltPathAndExt(XML_DIR,rdpath,'.xml')
+            print xmlpath
             if xmlpath in xmlFiles:
                 self.files.append((rdpath, xmlpath))
             else:
@@ -56,16 +57,16 @@ class FOMAutomator(object):
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         handler.setFormatter(logFormat)
         fileLogger = QueueListener(loggingQueue, handler)
-        fileLogger.start()
+        #fileLogger.start()
         
-        # the jobs to process each of the filees
+        # the jobs to process each of the files
         jobs = [(loggingQueue, filename, xmlpath, self.version,
                  self.lastVersion, self.modname, self.params, self.funcDicts)
                 for (filename, xmlpath) in self.files]
         processPool.map(makeFileRunner, jobs)
         processPool.close()
         processPool.join()
-        fileLogger.stop()
+        #fileLogger.stop()
 
     def processFuncs(self):
         self.params = {}
@@ -162,18 +163,20 @@ def makeFileRunner(args):
 
 class FileRunner(object):
     def __init__(self, queue, expfile, xmlpath, version, lastversion, modname, newparams, funcdicts):
+        print "xml path:", xmlpath
         self.txtfile = expfile
         self.expfilename = os.path.splitext(os.path.split(self.txtfile)[1])[0]
         self.version = version
         self.modname = modname
         self.fdicts = funcdicts
-        oldversion = 0
-        if lastversion:
+        self.FOMs, self.interData, self.params = {}, {}, {}
+        if lastversion and xmlpath:
+            print "getting XML"
             oldversion, self.FOMs, self.interData, self.params = xmltranslator.getDataFromXML(xmlpath)
             #print "xml read"
-        if oldversion != lastversion:
-            #print "from scratch"
-            self.FOMs, self.interData, self.params = {}, {}, {}
+            if oldversion != lastversion:
+                print "no XML file for last version"
+                self.FOMs, self.interData, self.params = {}, {}, {}
         for param in newparams:
             self.params[param] = newparams[param]
         # look for raw data dictionary before creating one from the text file
