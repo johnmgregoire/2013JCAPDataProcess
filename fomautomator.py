@@ -28,6 +28,7 @@ XML_DIR = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML")
 class FOMAutomator(object):
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
                  funcModule, expTypes):
+        
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
@@ -44,17 +45,20 @@ class FOMAutomator(object):
             else:
                 self.files.append((rdpath, ''))
 
+    """ starts running the jobs in parrallel and initilizes logging """
     def runParallel(self):
-        #self.processFuncs() #called by GUI
-        #self.requestParams() #handled separately by GUI
+        
+        # setting up the manager and things required to log due to multiprocessing
         pmanager = Manager()
         loggingQueue = pmanager.Queue()
         processPool = Pool()
         handler = logging.FileHandler('test.log')
-        logFormat = logging.Formatter('%(message)s')
+        logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         handler.setFormatter(logFormat)
         fileLogger = QueueListener(loggingQueue, handler)
         fileLogger.start()
+        
+        # the jobs to process each of the filees
         jobs = [(loggingQueue, filename, xmlpath, self.version,
                  self.lastVersion, self.modname, self.params, self.funcDicts)
                 for (filename, xmlpath) in self.files]
@@ -67,6 +71,8 @@ class FOMAutomator(object):
         self.params = {}
         self.funcDicts = {}
         self.allFuncs = []
+        
+        # if we have the type of experiment, we can just get the specific functions
         if self.expTypes:
             for tech in self.expTypes:
                 techDict = self.funcMod.validFuncs.get(tech)
@@ -74,6 +80,7 @@ class FOMAutomator(object):
                     for func in techDict:
                         if func not in self.allFuncs:
                             self.allFuncs.append(func)
+        # if not we just get them all                     
         else:
             self.allFuncs = [f[0] for f in getmembers(self.funcMod, isfunction)]
                         
@@ -104,6 +111,7 @@ class FOMAutomator(object):
             self.funcDicts[fname] = funcdict
         return self.funcDicts
 
+    """ changes the parameter value in the function dictionary """
     def setParams(self, funcNames, paramsList):
         for fname, params in zip(funcNames, paramsList):
             fdict = self.funcDicts[fname]
@@ -111,19 +119,24 @@ class FOMAutomator(object):
             fdict['#'+param] = val
             self.params[fname+'_'+param] = val
 
-##    def requestParams(self):
-##        for fname in self.funcDicts.keys():
-##            fdict = self.funcDicts[fname]
-##            if fdict.get('params'):
-##                usedefault = distutils.util.strtobool(raw_input("Use default parameters for "+fname+"? "))
-##                # uncomment ^ this line to take parameters from user
-##             x   #usedefault = True #THIS IS FOR TESTING ONLY
-##                if not usedefault:
-##                    for param in fdict.get('params'):
-##                        newval = raw_input(param+": ")
-##                        self.params[fname+'_'+param] = attemptnumericconversion(newval)
-##                        fdict['#'+param] = attemptnumericconversion(newval)
+    """ returns a list of the parameters if the default is false, else it returns
+        the functions and values that can be passed to setParams """
+    def requestParams(self,default=True):
+        funcNames = (self.processFuncs().keys())
+        funcNames.sort()
+        params_full = [[ fname, [(pname,type(pval),pval) for pname in self.funcDicts[fname]['params']
+                     for pval in [self.funcDicts[fname]['#'+pname]]]]
+                    for fname in funcNames if self.funcDicts[fname]['params'] != []]
+        
+        if not default:
+            return params_full
+        else:
+            funcs_names = [func[0] for func in params_full for num in range(len(func[1]))]
+            params_and_answers = [[pname,pval] for func in params_full for (pname,ptype,pval) in func[1]]
 
+            return funcs_names, params_and_answers
+        
+        
     def accessDict(self, fname, varset, argname):
         fdict = self.funcDicts.get(fname)
         try:

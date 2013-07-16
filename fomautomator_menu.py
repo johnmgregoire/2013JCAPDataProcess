@@ -151,14 +151,11 @@ class echemvisDialog(QtGui.QMainWindow):
                                                            self.prevVersion,
                                                            self.progModule,
                                                            self.exptypes)
-                funcDict = self.automator.processFuncs()
-                params = self.getParams(funcDict)
+                params = self.getParams(default=False)
                 if not params:
-                    #return 1
-                
+                    return 1
                 funcNames, paramsList = params
-                
-                self.automator.setParams(funcNames, list(paramsList))
+                self.automator.setParams(funcNames, paramsList)
                 self.automator.runParallel()
 
                                  
@@ -258,6 +255,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.programDialog = QtGui.QFileDialog(self,
                                                caption = "Select a version folder containing data analysis scripts",
                                                directory = FUNC_DIR)
+        
         self.programDialog.setFileMode(QtGui.QFileDialog.Directory)
         # if user clicks 'Choose'
         if self.programDialog.exec_():
@@ -284,25 +282,24 @@ class echemvisDialog(QtGui.QMainWindow):
         if self.paths:
             self.runButton.show()
 
-    def getParams(self,automatorFuncDict):
-        self.funcNames = automatorFuncDict.keys()
-        self.funcNames.sort()
-        self.params_full = [[ fname, [(pname,type(pval),pval) for pname in automatorFuncDict[fname]['params']
-                             for pval in [automatorFuncDict[fname]['#'+pname]]]]
-                            for fname in self.funcNames if automatorFuncDict[fname]['params'] != []]
+    """ gets the parameter input from the user or returns the default set """
+    def getParams(self,default=False):
+        
+        params = self.automator.requestParams(default)
 
+        # if we're using the default that parameters are in the correct format and ready to go
+        if default:
+            return params
 
-        funcs_names =[]
-        funcs_params = []
+        # since we're not using the default, we must get the user to give us some values
+        funcs_names = [func[0] for func in params for num in range(len(func[1]))]
+        funcs_params = [pname for func in params for (pname,ptype,pval) in func[1]]
         funcs_ans = []
         
-        for func in self.params_full:
+        for func in params:
             ans=userinputcaller(self.parent, inputs=func[1], title='Enter Values for ' + str(func[0]), cancelallowed=True)
-            function_params = [pname for (pname,ptype,pval) in func[1]]
             if ans == None:
                 return None
-            funcs_names += [func[0]]*len(func[1])
-            funcs_params += function_params
             funcs_ans += ans
 
         return funcs_names,[list(a) for a in zip(funcs_params,funcs_ans)]
