@@ -11,6 +11,7 @@ import numpy
 import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
 from fomautomator import FUNC_DIR, XML_DIR
+from rawdataparser import RAW_DATA_PATH
 import fomautomator
 import path_helpers
 
@@ -150,7 +151,7 @@ class echemvisDialog(QtGui.QMainWindow):
                                                            self.versionName,
                                                            self.prevVersion,
                                                            self.progModule,
-                                                           self.exptypes)
+                                                           self.exptypes,XML_DIR,RAW_DATA_PATH)
                 params = self.getParams(default=False)
                 if not params:
                     return 1
@@ -208,7 +209,6 @@ class echemvisDialog(QtGui.QMainWindow):
             # since we're not doing database and we already  took some files, we can show some buttons again
             self.folderButton.show()
 
-        print "getting the path info"
         thepaths = self.getPathInfo()
         self.message_label.setText("If you wish to select another folder, please use the button below")
         plateExperiment = "Plate " + str(self.plate_id) + " Experiments " + str(self.selectexids)
