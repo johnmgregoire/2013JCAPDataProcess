@@ -21,13 +21,14 @@ import importlib
 import distutils.util
 import itertools
 import path_helpers
+import fomautomator_helpers
 
-FUNC_DIR = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisFunctions")
-XML_DIR = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML")
+FUNC_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisFunctions"))
+XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML"))
 
 class FOMAutomator(object):
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
-                 funcModule, expTypes):
+                 funcModule, expTypes, outDir,rawDataDir):
         
         # initializing all the basic info
         self.version = versionName
@@ -35,16 +36,23 @@ class FOMAutomator(object):
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
         self.expTypes = expTypes
+        self.outDir = outDir
+        self.rawDataDir = rawDataDir
         self.files = []
 
         # setting up everything having to do with saving the XML files
         for rdpath in rawDataFiles:
+<<<<<<< HEAD
             xmlpath = path_helpers.giveAltPathAndExt(XML_DIR,rdpath,'.xml')
             print xmlpath
+=======
+            xmlpath = path_helpers.giveAltPathAndExt(outDir,rdpath,'.xml')
+>>>>>>> 99f6218d54186ab244bc5fafe0eb09df68372749
             if xmlpath in xmlFiles:
                 self.files.append((rdpath, xmlpath))
             else:
                 self.files.append((rdpath, ''))
+
 
     """ starts running the jobs in parrallel and initilizes logging """
     def runParallel(self):
@@ -61,7 +69,7 @@ class FOMAutomator(object):
         
         # the jobs to process each of the files
         jobs = [(loggingQueue, filename, xmlpath, self.version,
-                 self.lastVersion, self.modname, self.params, self.funcDicts)
+                 self.lastVersion, self.modname, self.params, self.funcDicts, self.outDir, self.rawDataDir)
                 for (filename, xmlpath) in self.files]
         processPool.map(makeFileRunner, jobs)
         processPool.close()
@@ -136,44 +144,23 @@ class FOMAutomator(object):
             params_and_answers = [[pname,pval] for func in params_full for (pname,ptype,pval) in func[1]]
 
             return funcs_names, params_and_answers
-        
-        
-    def accessDict(self, fname, varset, argname):
-        fdict = self.funcDicts.get(fname)
-        try:
-            # parameter
-            return self.params[fname+'_'+argname]
-        except KeyError:
-            if argname in fdict['batchvars']:
-                # retrieve current variable in batch
-                datavar = [var for var in varset if var in fdict['~'+argname]][0]
-                return datavar
-            elif (fdict[argname] in self.rawData) or (fdict[argname] in self.interData):
-                # raw/intermediate data value
-                return fdict[argname]
-            else:
-                # this error will need to be handled somehow, and this
-                #   is something that should definitely be tested in
-                #   the committer
-                print argname, "is not a valid argument"
-
 
 def makeFileRunner(args):
     return FileRunner(*args)
 
 class FileRunner(object):
-    def __init__(self, queue, expfile, xmlpath, version, lastversion, modname, newparams, funcdicts):
-        print "xml path:", xmlpath
+    def __init__(self, queue, expfile, xmlpath, version, lastversion, modname, newparams, funcdicts,outDir,rawDataDir):
         self.txtfile = expfile
         self.expfilename = os.path.splitext(os.path.split(self.txtfile)[1])[0]
         self.version = version
         self.modname = modname
+        self.outDir = outDir
+        self.rawDataDir = rawDataDir
         self.fdicts = funcdicts
-        self.FOMs, self.interData, self.params = {}, {}, {}
+        self.FOMs, self.interData, self.params = {}, {}, {}     
         if lastversion and xmlpath:
             print "getting XML"
             oldversion, self.FOMs, self.interData, self.params = xmltranslator.getDataFromXML(xmlpath)
-            #print "xml read"
             if oldversion != lastversion:
                 print "no XML file for last version"
                 self.FOMs, self.interData, self.params = {}, {}, {}
@@ -181,12 +168,12 @@ class FileRunner(object):
             self.params[param] = newparams[param]
         # look for raw data dictionary before creating one from the text file
         try:
-            rawdatafile = os.path.join(RAW_DATA_PATH,
-                                       [fname for fname in os.listdir(RAW_DATA_PATH)
+            rawdatafile = os.path.join(self.rawDataDir,
+                                       [fname for fname in os.listdir(self.rawDataDir)
                                         if self.expfilename in fname][0])
         except IndexError:
             #print "brand new file"
-            rawdatafile = readechemtxt(self.txtfile)            
+            rawdatafile = readechemtxt(self.txtfile)
         with open(rawdatafile) as rawdata:
             self.rawData = pickle.load(rawdata)
 ##        self.run()
@@ -251,7 +238,7 @@ class FileRunner(object):
                 print argname, "is not a valid argument"
 
     def saveXML(self):
-        savepath = os.path.join(XML_DIR, self.expfilename+'.xml')
+        savepath = os.path.join(self.outDir, self.expfilename+'.xml')
         dataTup = (self.FOMs, self.interData, self.params)
         xmltranslator.toXML(savepath, self.version, dataTup)
 
@@ -265,8 +252,31 @@ def main(argv):
     parser.add_argument('-X', '--errornum', type=int, help="The maximum number of errors", nargs=1)
     args = vars(parser.parse_args(argv))
 
+    paths = []
+    outputDir = None
+    
     if args["inputfolder"]:
-        print path_helpers.getFolderFiles(args["inputfolder"][0], '.txt')
+        paths += path_helpers.getFolderFiles(args["inputfolder"][0], '.txt')
+    else:
+        return
+        
+
+    
+    if args["outputfolder"]:
+        outputDir = args["outputfolder"][0]
+
+    else:
+        return
+
+    xmlFiles = path_helpers.getFolderFiles(outputDir,'.xml')
+    versionName, prevVersion = fomautomator_helpers.getVersions(FUNC_DIR)
+    progModule = "fomfunctions"
+    exptypes = []
+    automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,exptypes,XML_DIR,RAW_DATA_PATH)
+    funcNames, paramsList = automator.requestParams(default)
+    automator.setParams(funcNames, paramsList)
+    #self.automator.runParallel()
+        
 
 if __name__ == "__main__":
     main(sys.argv[1:])
