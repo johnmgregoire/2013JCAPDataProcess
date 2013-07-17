@@ -7,8 +7,12 @@ import os
 
 """ gets  all the files in the directory that have the given extension """
 def getFolderFiles(directory, ext):
-    return map(lambda p: os.path.normpath(os.path.join(directory, p)),
-                               filter(lambda f: f.endswith(ext), os.listdir(directory)))
+    try:
+        files = map(lambda p: os.path.normpath(os.path.join(directory, p)),
+                                   filter(lambda f: f.endswith(ext), os.listdir(directory)))
+        return files
+    except:
+        raise
 
 """ gets a recent folder based on the assumption that that it is
     named so that it is the the last in alphabetical order

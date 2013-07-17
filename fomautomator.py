@@ -27,8 +27,10 @@ FUNC_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAna
 XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML"))
 
 class FOMAutomator(object):
+    """ initializes the automator with all necessary information """
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
                  funcModule, expTypes, outDir, rawDataDir):
+        
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
@@ -46,7 +48,6 @@ class FOMAutomator(object):
                 self.files.append((rdpath, xmlpath))
             else:
                 self.files.append((rdpath, ''))
-
 
     """ starts running the jobs in parrallel and initilizes logging """
     def runParallel(self):     
@@ -93,8 +94,7 @@ class FOMAutomator(object):
             dictargs = funcObj.func_code.co_argcount - len(funcObj.func_defaults)
             funcdict['numdictargs'] = dictargs
             arglist = zip(funcObj.func_code.co_varnames[dictargs:],
-                          funcObj.func_defaults)
-
+                          funcObj.func_defaults) 
             
             for arg, val in arglist:
                 if isinstance(val, list):
@@ -162,10 +162,12 @@ class FileRunner(object):
                                        [fname for fname in os.listdir(self.rawDataDir)
                                         if self.expfilename in fname][0])
         except IndexError:
-            #print "brand new file"
             rawdatafile = readechemtxt(self.txtfile)
-        with open(rawdatafile) as rawdata:
-            self.rawData = pickle.load(rawdata)
+        try: 
+            with open(rawdatafile) as rawdata:
+                self.rawData = pickle.load(rawdata)
+        except:
+            return
 
         funcMod = __import__(self.modname)
         allFuncs = [f[1] for f in getmembers(funcMod, isfunction)]
@@ -242,30 +244,40 @@ def main(argv):
 
     paths = []
     outputDir = None
+    jobname = ""
+    max_errors = 10
     
     if args["inputfolder"]:
         paths += path_helpers.getFolderFiles(args["inputfolder"][0], '.txt')
     else:
         return
-        
 
-    
+    if args["inputfile"]:
+        path += args["inputfolder"][0]
+
+    if args["errornum"]:
+        max_errors = args["errornum"][0]
+        
     if args["outputfolder"]:
         outputDir = args["outputfolder"][0]
-
     else:
         return
 
+
     xmlFiles = path_helpers.getFolderFiles(outputDir,'.xml')
     versionName, prevVersion = fomautomator_helpers.getVersions(FUNC_DIR)
+    versionName, prevVersion  = '0', ''
     sys.path.insert(1, os.path.join(FUNC_DIR,versionName))
     progModule = "fomfunctions"
     exptypes = []
+    
     automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,exptypes,XML_DIR,RAW_DATA_PATH)
     funcNames, paramsList = automator.requestParams(default=True)
     automator.setParams(funcNames, paramsList)
-    #self.automator.runParallel()
+    automator.runParallel()
         
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+
+# python fomautomator.py -I "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\1 File" -O "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\AutoAnalysisXML"
