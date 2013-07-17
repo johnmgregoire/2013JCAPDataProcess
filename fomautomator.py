@@ -1,6 +1,6 @@
 # Allison Schubauer and Daisy Hernandez
 # Created: 6/26/2013
-# Last Updated: 7/15/2013
+# Last Updated: 7/17/2013
 # For JCAP
 
 """
@@ -27,6 +27,7 @@ FUNC_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAna
 XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML"))
 
 class FOMAutomator(object):
+    
     """ initializes the automator with all necessary information """
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
                  funcModule, expTypes, outDir, rawDataDir):
@@ -50,7 +51,8 @@ class FOMAutomator(object):
                 self.files.append((rdpath, ''))
 
     """ starts running the jobs in parrallel and initilizes logging """
-    def runParallel(self):     
+    def runParallel(self):
+        
         # setting up the manager and things required to log due to multiprocessing
         pmanager = Manager()
         loggingQueue = pmanager.Queue()
@@ -60,6 +62,7 @@ class FOMAutomator(object):
         handler.setFormatter(logFormat)
         fileLogger = QueueListener(loggingQueue, handler)
         fileLogger.start()
+        
         # the jobs to process each of the files
         jobs = [(loggingQueue, filename, xmlpath, self.version,
                  self.lastVersion, self.modname, self.params, self.funcDicts, self.outDir, self.rawDataDir)
@@ -70,19 +73,21 @@ class FOMAutomator(object):
         fileLogger.stop()
         handler.close()
 
+    """ returns a dicitonary with all the parameters and batch variables in """
     def processFuncs(self):
+        
         self.params = {}
         self.funcDicts = {}
         self.allFuncs = []
-        
+
         # if we have the type of experiment, we can just get the specific functions
-        if self.expTypes:
+        if self.expTypes:         
             for tech in self.expTypes:
                 techDict = self.funcMod.validFuncs.get(tech)
                 if techDict:
-                    for func in techDict:
-                        if func not in self.allFuncs:
-                            self.allFuncs.append(func)
+                    [self.allFuncs.append(func) for func in techDict
+                     if func not in self.allFuncs]
+
         # if not we just get them all                     
         else:
             self.allFuncs = [f[0] for f in getmembers(self.funcMod, isfunction)]
@@ -95,15 +100,13 @@ class FOMAutomator(object):
             funcdict['numdictargs'] = dictargs
             arglist = zip(funcObj.func_code.co_varnames[dictargs:],
                           funcObj.func_defaults) 
-            
+
+            # note: we're assuming any string argument to the functions that the user wrote is data
+            # for example t = 't(s)' in the function would mean t is equal to the raw data column t(s)
             for arg, val in arglist:
                 if isinstance(val, list):
                     funcdict['batchvars'].append(arg)
                     funcdict['~'+arg] = val
-                #elif (val in RAW_DATA) or (val in INTER_DATA):
-                # we can't check this ^ if we process function before looking at data
-                # so intead just check if it's a string and assume it's data
-                #   (new version tester should verify this somehow)
                 elif isinstance(val, str):
                     funcdict[arg] = val
                 else:
@@ -115,6 +118,7 @@ class FOMAutomator(object):
 
     """ changes the parameter value in the function dictionary """
     def setParams(self, funcNames, paramsList):
+        
         for fname, params in zip(funcNames, paramsList):
             fdict = self.funcDicts[fname]
             param,val = params
@@ -124,6 +128,7 @@ class FOMAutomator(object):
     """ returns a list of the parameters if the default is false, else it returns
         the functions and values that can be passed to setParams """
     def requestParams(self,default=True):
+        
         funcNames = (self.processFuncs().keys())
         funcNames.sort()
         params_full = [[ fname, [(pname,type(pval),pval) for pname in self.funcDicts[fname]['params']
