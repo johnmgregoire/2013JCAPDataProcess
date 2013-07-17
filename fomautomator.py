@@ -59,7 +59,6 @@ class FOMAutomator(object):
         handler.setFormatter(logFormat)
         fileLogger = QueueListener(loggingQueue, handler)
         fileLogger.start()
-        
         # the jobs to process each of the files
         jobs = [(loggingQueue, filename, xmlpath, self.version,
                  self.lastVersion, self.modname, self.params, self.funcDicts, self.outDir, self.rawDataDir)
@@ -68,6 +67,7 @@ class FOMAutomator(object):
         processPool.close()
         processPool.join()
         fileLogger.stop()
+        handler.close()
 
     def processFuncs(self):
         self.params = {}
@@ -139,7 +139,17 @@ class FOMAutomator(object):
             return funcs_names, params_and_answers
 
 def makeFileRunner(args):
-    return FileRunner(*args)
+    try:
+        success = FileRunner(*args)
+    except Exception as someException:
+        queue = args[0]
+        errorHandler = QueueHandler(queue)
+        root = logging.getLogger()
+        root.addHandler(errorHandler)
+        root.error(someException)
+        success = -1
+    finally:
+        return success
 
 class FileRunner(object):
     def __init__(self, queue, expfile, xmlpath, version, lastversion, modname, newparams, funcdicts,
