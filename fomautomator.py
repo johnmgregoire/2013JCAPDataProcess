@@ -15,7 +15,6 @@ from multiprocessing import Process, Pool, Manager
 from inspect import *
 from rawdataparser import RAW_DATA_PATH
 from qhtest import *
-#import qhtest
 import jsontranslator
 import xmltranslator
 import importlib
@@ -206,9 +205,10 @@ def main(argv):
     versionName, prevVersion  = '0', ''
     sys.path.insert(1, os.path.join(FUNC_DIR,versionName))
     progModule = "fomfunctions"
+    updateModule = None
     exptypes = []
     
-    automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,exptypes,XML_DIR,RAW_DATA_PATH)
+    automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,updateModule,exptypes,XML_DIR,RAW_DATA_PATH)
     funcNames, paramsList = automator.requestParams(default=True)
     automator.setParams(funcNames, paramsList)
     automator.runParallel()
