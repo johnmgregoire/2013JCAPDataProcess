@@ -42,7 +42,7 @@ class FOMAutomator(object):
 
         # setting up everything having to do with saving the XML files
         for rdpath in rawDataFiles:
-            print xmlpath
+            #print xmlpath
             xmlpath = path_helpers.giveAltPathAndExt(outDir,rdpath,'.xml')
             if xmlpath in xmlFiles:
                 self.files.append((rdpath, xmlpath))
@@ -51,8 +51,7 @@ class FOMAutomator(object):
 
 
     """ starts running the jobs in parrallel and initilizes logging """
-    def runParallel(self):
-        
+    def runParallel(self):     
         # setting up the manager and things required to log due to multiprocessing
         pmanager = Manager()
         loggingQueue = pmanager.Queue()
@@ -61,7 +60,7 @@ class FOMAutomator(object):
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         handler.setFormatter(logFormat)
         fileLogger = QueueListener(loggingQueue, handler)
-        #fileLogger.start()
+        fileLogger.start()
         
         # the jobs to process each of the files
         jobs = [(loggingQueue, filename, xmlpath, self.version,
@@ -70,7 +69,7 @@ class FOMAutomator(object):
         processPool.map(makeFileRunner, jobs)
         processPool.close()
         processPool.join()
-        #fileLogger.stop()
+        fileLogger.stop()
 
     def processFuncs(self):
         self.params = {}
@@ -156,11 +155,7 @@ class FileRunner(object):
         self.fdicts = funcdicts
         self.FOMs, self.interData, self.params = {}, {}, {}     
         if lastversion and xmlpath:
-            print "getting XML"
             oldversion, self.FOMs, self.interData, self.params = xmltranslator.getDataFromXML(xmlpath)
-            if oldversion != lastversion:
-                print "no XML file for last version"
-                self.FOMs, self.interData, self.params = {}, {}, {}
         for param in newparams:
             self.params[param] = newparams[param]
         # look for raw data dictionary before creating one from the text file
@@ -173,9 +168,7 @@ class FileRunner(object):
             rawdatafile = readechemtxt(self.txtfile)
         with open(rawdatafile) as rawdata:
             self.rawData = pickle.load(rawdata)
-##        self.run()
-##
-##    def run(self):
+
         funcMod = __import__(self.modname)
         allFuncs = [f[1] for f in getmembers(funcMod, isfunction)]
         validDictArgs = [self.rawData, self.interData]

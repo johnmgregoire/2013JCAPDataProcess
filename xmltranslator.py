@@ -23,6 +23,10 @@ def toXML(filepath, verNum, dictTup):
                 arrencode = encoding[0]+str(len(val))+encoding[1:]
                 hexstr = struct.pack(arrencode, *val.tolist())
                 fignode.set("array_length", str(len(val)))
+            elif isinstance(val, list):
+                arrencode = encoding[0]+str(len(val))+encoding[1:]
+                hexstr = struct.pack(arrencode, *val)
+                fignode.set("array_length", str(len(val)))
             elif isinstance(val, numpy.generic):
                 hexstr = struct.pack(encoding, numpy.asscalar(val))
             else:
@@ -40,7 +44,7 @@ def toXML(filepath, verNum, dictTup):
     return root
 
 def getPrimitiveType(obj):
-    if isinstance(obj, numpy.ndarray):
+    if isinstance(obj, numpy.ndarray) or isinstance(obj, list):
         return getPrimitiveType(obj[0])
     elif isinstance(obj, numpy.generic):
         if "float" in type(obj).__name__:
