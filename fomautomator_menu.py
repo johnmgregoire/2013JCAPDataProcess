@@ -264,7 +264,7 @@ class echemvisDialog(QtGui.QMainWindow):
             targetDir = str(dirList[0])
             self.prog_label.setText(targetDir)
             # check targetDir for the target module first
-            sys.path.insert(0, targetDir)
+            sys.path.insert(1, targetDir)
             pyFiles = filter(lambda f: f.endswith('.py'), os.listdir(targetDir))
             self.progModule = [os.path.splitext(mod)[0] for mod in pyFiles if
                                mod == 'fomfunctions.py'][0]

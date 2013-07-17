@@ -29,7 +29,6 @@ XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnal
 class FOMAutomator(object):
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
                  funcModule, expTypes, outDir, rawDataDir):
-        
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
@@ -42,7 +41,6 @@ class FOMAutomator(object):
 
         # setting up everything having to do with saving the XML files
         for rdpath in rawDataFiles:
-            #print xmlpath
             xmlpath = path_helpers.giveAltPathAndExt(outDir,rdpath,'.xml')
             if xmlpath in xmlFiles:
                 self.files.append((rdpath, xmlpath))
@@ -234,11 +232,11 @@ class FileRunner(object):
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-I','--inputfolder', type=str, help="The input folder", nargs=1)
+    parser.add_argument('-I','--inputfolder', type=str, help="The input folder", nargs=1, required=True)
     parser.add_argument('-i', '--inputfile',  type=str, help="The input file",  nargs=1)
     parser.add_argument('-f', '--askabout', type=str, help="File containing input files", nargs=1)
     parser.add_argument('-J','--jobname', type=str, help="The job_name", nargs=1)
-    parser.add_argument('-O', '--outputfolder', type=str, help="The output folder", nargs=1)
+    parser.add_argument('-O', '--outputfolder', type=str, help="The output folder", nargs=1, required=True)
     parser.add_argument('-X', '--errornum', type=int, help="The maximum number of errors", nargs=1)
     args = vars(parser.parse_args(argv))
 
@@ -260,10 +258,11 @@ def main(argv):
 
     xmlFiles = path_helpers.getFolderFiles(outputDir,'.xml')
     versionName, prevVersion = fomautomator_helpers.getVersions(FUNC_DIR)
+    sys.path.insert(1, os.path.join(FUNC_DIR,versionName))
     progModule = "fomfunctions"
     exptypes = []
     automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,exptypes,XML_DIR,RAW_DATA_PATH)
-    funcNames, paramsList = automator.requestParams(default)
+    funcNames, paramsList = automator.requestParams(default=True)
     automator.setParams(funcNames, paramsList)
     #self.automator.runParallel()
         
