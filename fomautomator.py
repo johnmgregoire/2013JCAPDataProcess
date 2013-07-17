@@ -59,10 +59,13 @@ class FOMAutomator(object):
         pmanager = Manager()
         loggingQueue = pmanager.Queue()
         processPool = Pool()
-        handler = logging.FileHandler('test.log')
+        statusHandler = logging.FileHandler('test.log')
+        errorHandler = logging.FileHandler('testerror.log')
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        handler.setFormatter(logFormat)
-        fileLogger = QueueListener(loggingQueue, handler)
+        statusHandler.setFormatter(logFormat)
+        errorHandler.setFormatter(logFormat)
+        errorHandler.setLevel('ERROR')
+        fileLogger = QueueListener(loggingQueue, statusHandler, errorHandler)
         fileLogger.start()
         
         # the jobs to process each of the files
@@ -74,7 +77,8 @@ class FOMAutomator(object):
         processPool.close()
         processPool.join()
         fileLogger.stop()
-        handler.close()
+        statusHandler.close()
+        errorHandler.close()
 
     """ returns a dicitonary with all the parameters and batch variables in """
     def processFuncs(self):
@@ -148,7 +152,9 @@ class FOMAutomator(object):
 
 def makeFileRunner(args): 
     root = logging.getLogger()
+    root.setLevel('INFO')
     errorHandler = QueueHandler(queue)
+    errorHandler.setLevel('ERROR')
     root.addHandler(errorHandler)
     try:
         success = filerunner.FileRunner(*args)

@@ -77,7 +77,7 @@ class FileRunner(object):
         self.saveXML()
         processHandler = qhtest.QueueHandler(queue)  
         root = logging.getLogger()
-        root.setLevel('INFO')
+        #root.setLevel('INFO')
         root.addHandler(processHandler)
         root.info('File %s completed' %self.expfilename)
         return
