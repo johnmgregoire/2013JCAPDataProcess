@@ -31,13 +31,14 @@ class FOMAutomator(object):
     
     """ initializes the automator with all necessary information """
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
-                 funcModule, expTypes, outDir, rawDataDir):
+                 funcModule, updateModule, expTypes, outDir, rawDataDir):
         
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
+        self.updatemod = updateModule
         self.expTypes = expTypes
         self.outDir = outDir
         self.rawDataDir = rawDataDir
@@ -66,7 +67,8 @@ class FOMAutomator(object):
         
         # the jobs to process each of the files
         jobs = [(loggingQueue, filename, xmlpath, self.version,
-                 self.lastVersion, self.modname, self.params, self.funcDicts, self.outDir, self.rawDataDir)
+                 self.lastVersion, self.modname, self.updatemod,
+                 self.params, self.funcDicts, self.outDir, self.rawDataDir)
                 for (filename, xmlpath) in self.files]
         processPool.map(makeFileRunner, jobs)
         processPool.close()
@@ -144,14 +146,14 @@ class FOMAutomator(object):
 
             return funcs_names, params_and_answers
 
-def makeFileRunner(args):
+def makeFileRunner(args): 
+    root = logging.getLogger()
+    errorHandler = QueueHandler(queue)
+    root.addHandler(errorHandler)
     try:
         success = filerunner.FileRunner(*args)
     except Exception as someException:
         queue = args[0]
-        errorHandler = QueueHandler(queue)
-        root = logging.getLogger()
-        root.addHandler(errorHandler)
         root.error(someException)
         success = -1
     finally:

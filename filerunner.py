@@ -13,18 +13,21 @@ import itertools
 import logging
 
 class FileRunner(object):
-    def __init__(self, queue, expfile, xmlpath, version, lastversion, modname, newparams, funcdicts,
-                 outDir, rawDataDir):
+    def __init__(self, queue, expfile, xmlpath, version, lastversion, modname,
+                 updatemod, newparams, funcdicts, outDir, rawDataDir):
         self.txtfile = expfile
         self.expfilename = os.path.splitext(os.path.split(self.txtfile)[1])[0]
         self.version = version
-        self.modname = modname
+        #self.modname = modname
         self.outDir = outDir
         self.rawDataDir = rawDataDir
         self.fdicts = funcdicts
         self.FOMs, self.interData, self.params = {}, {}, {}     
         if lastversion and xmlpath:
             oldversion, self.FOMs, self.interData, self.params = xmltranslator.getDataFromXML(xmlpath)
+            funcMod = __import__(updatemod)
+        else:
+            funcMod = __import__(modname)
         for param in newparams:
             self.params[param] = newparams[param]
         # look for raw data dictionary before creating one from the text file
@@ -40,7 +43,7 @@ class FileRunner(object):
         except:
             return
 
-        funcMod = __import__(self.modname)
+        #funcMod = __import__(self.modname)
         allFuncs = [f[1] for f in inspect.getmembers(funcMod, inspect.isfunction)]
         validDictArgs = [self.rawData, self.interData]
         expType = self.rawData.get('BLTechniqueName')

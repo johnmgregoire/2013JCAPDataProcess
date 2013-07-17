@@ -20,6 +20,8 @@ sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
     
 import mysql_dbcommlib 
 
+MOD_NAME = 'fomfunctions'
+UPDATE_MOD_NAME = 'fomfunctions_update'
 
 ################################################################################
 ############################ echemvisDialog class ##############################
@@ -34,6 +36,7 @@ class echemvisDialog(QtGui.QMainWindow):
 
         self.paths = []
         self.progModule = None
+        self.updateModule = None
         self.exptypes = []
         self.initDB()
         self.initUI()
@@ -151,6 +154,7 @@ class echemvisDialog(QtGui.QMainWindow):
                                                            self.versionName,
                                                            self.prevVersion,
                                                            self.progModule,
+                                                           self.updateModule,
                                                            self.exptypes,XML_DIR,RAW_DATA_PATH)
                 params = self.getParams(default=False)
                 if not params:
@@ -267,7 +271,9 @@ class echemvisDialog(QtGui.QMainWindow):
             sys.path.insert(1, targetDir)
             pyFiles = filter(lambda f: f.endswith('.py'), os.listdir(targetDir))
             self.progModule = [os.path.splitext(mod)[0] for mod in pyFiles if
-                               mod == 'fomfunctions.py'][0]
+                               mod == MOD_NAME+'.py'][0]
+            self.updateModule = [os.path.splitext(mod)[0] for mod in pyFiles if
+                                 mod == UPDATE_MOD_NAME+'.py'][0]
             self.versionName = os.path.basename(targetDir)
             print 'current version:', self.versionName
             funcDir = os.listdir(FUNC_DIR)
