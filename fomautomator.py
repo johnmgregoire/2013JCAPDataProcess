@@ -160,7 +160,8 @@ def makeFileRunner(args):
     root.addHandler(processErrorHandler)
     root.addHandler(processStatusHandler)
     try:
-        filename = filerunner.FileRunner(*args)
+        filerunner.FileRunner(*args)
+        filename = os.path.splitext(os.path.split(args[1])[1])[0]
         root.info('File %s completed' %filename)
     except Exception as someException:
         root.error(someException)

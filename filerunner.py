@@ -81,7 +81,7 @@ class FileRunner(object):
         #root.setLevel('INFO')
         #root.addHandler(processHandler)
         #root.info('File %s completed' %self.expfilename)
-        return self.expfilename
+        return
 
     def accessDict(self, fname, varset, argname):
         fdict = self.fdicts.get(fname)
