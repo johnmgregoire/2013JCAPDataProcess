@@ -150,20 +150,22 @@ class FOMAutomator(object):
 
             return funcs_names, params_and_answers
 
-def makeFileRunner(args): 
+def makeFileRunner(args):
+    queue = args[0]
     root = logging.getLogger()
     root.setLevel('INFO')
-    errorHandler = QueueHandler(queue)
-    errorHandler.setLevel('ERROR')
-    root.addHandler(errorHandler)
+    processErrorHandler = QueueHandler(queue)
+    processErrorHandler.setLevel('ERROR')
+    processStatusHandler = QueueHandler(queue)
+    root.addHandler(processErrorHandler)
+    root.addHandler(processStatusHandler)
     try:
-        success = filerunner.FileRunner(*args)
+        filename = filerunner.FileRunner(*args)
+        root.info('File %s completed' %filename)
     except Exception as someException:
-        queue = args[0]
         root.error(someException)
-        success = -1
     finally:
-        return success
+        return
     
 
 def main(argv):

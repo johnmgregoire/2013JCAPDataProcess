@@ -272,8 +272,12 @@ class echemvisDialog(QtGui.QMainWindow):
             pyFiles = filter(lambda f: f.endswith('.py'), os.listdir(targetDir))
             self.progModule = [os.path.splitext(mod)[0] for mod in pyFiles if
                                mod == MOD_NAME+'.py'][0]
-            self.updateModule = [os.path.splitext(mod)[0] for mod in pyFiles if
-                                 mod == UPDATE_MOD_NAME+'.py'][0]
+            try:
+                self.updateModule = [os.path.splitext(mod)[0] for mod in pyFiles if
+                                     mod == UPDATE_MOD_NAME+'.py'][0]
+            except IndexError:
+                # no previous version
+                pass
             self.versionName = os.path.basename(targetDir)
             print 'current version:', self.versionName
             funcDir = os.listdir(FUNC_DIR)

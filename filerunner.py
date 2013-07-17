@@ -41,7 +41,7 @@ class FileRunner(object):
             with open(rawdatafile) as rawdata:
                 self.rawData = pickle.load(rawdata)
         except:
-            return
+            raise
 
         #funcMod = __import__(self.modname)
         allFuncs = [f[1] for f in inspect.getmembers(funcMod, inspect.isfunction)]
@@ -73,14 +73,15 @@ class FileRunner(object):
                                                 fdictargs+[self.accessDict(fname, varset, argname) for argname
                                                 in funcToRun.func_code.co_varnames[fdict['numdictargs']:funcToRun.func_code.co_argcount]])))
                     self.FOMs[('_').join(map(str, varset))+'_'+fname] = fom
-        # temporary function to monitor program's output
+        # need to save all dictionaries in pickle file, then remove certain
+        #   intermediates, then save JSON and XML files
         self.saveXML()
-        processHandler = qhtest.QueueHandler(queue)  
-        root = logging.getLogger()
+        #processHandler = qhtest.QueueHandler(queue)  
+        #root = logging.getLogger()
         #root.setLevel('INFO')
-        root.addHandler(processHandler)
-        root.info('File %s completed' %self.expfilename)
-        return
+        #root.addHandler(processHandler)
+        #root.info('File %s completed' %self.expfilename)
+        return self.expfilename
 
     def accessDict(self, fname, varset, argname):
         fdict = self.fdicts.get(fname)
