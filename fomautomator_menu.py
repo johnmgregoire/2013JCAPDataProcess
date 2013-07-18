@@ -14,7 +14,8 @@ import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
 import fomautomator
 import path_helpers
-import mysql_dbcommlib 
+import mysql_dbcommlib
+import itertools
 
 from fomautomator import FUNC_DIR, XML_DIR
 from rawdataparser import RAW_DATA_PATH

@@ -22,12 +22,14 @@ class FileRunner(object):
         self.outDir = outDir
         self.rawDataDir = rawDataDir
         self.fdicts = funcdicts
+        funcMod = __import__(modname)
         self.FOMs, self.interData, self.params = {}, {}, {}     
         if lastversion and xmlpath:
             oldversion, self.FOMs, self.interData, self.params = xmltranslator.getDataFromXML(xmlpath)
-            funcMod = __import__(updatemod)
-        else:
-            funcMod = __import__(modname)
+            if lastversion == oldversion:
+                funcMod = __import__(updatemod)
+            else:
+                self.FOMs, self.interData, self.params = {}, {}, {}
         for param in newparams:
             self.params[param] = newparams[param]
         # look for raw data dictionary before creating one from the text file
@@ -37,11 +39,8 @@ class FileRunner(object):
                                         if self.expfilename in fname][0])
         except IndexError:
             rawdatafile = rawdataparser.readechemtxt(self.txtfile)
-        try: 
-            with open(rawdatafile) as rawdata:
-                self.rawData = pickle.load(rawdata)
-        except:
-            raise
+        with open(rawdatafile) as rawdata:
+            self.rawData = pickle.load(rawdata)
 
         #funcMod = __import__(self.modname)
         allFuncs = [f[1] for f in inspect.getmembers(funcMod, inspect.isfunction)]

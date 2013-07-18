@@ -63,7 +63,6 @@ class FOMAutomator(object):
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         statusHandler.setFormatter(logFormat)
         errorHandler.setFormatter(logFormat)
-        #errorHandler.setLevel(logging.ERROR)
         errorHandler.addFilter(ErrorFilter())
         fileLogger = QueueListener(loggingQueue, statusHandler, errorHandler)
         fileLogger.start()
@@ -164,13 +163,20 @@ def makeFileRunner(args):
     processHandler = QueueHandler(queue)
     root.addHandler(processHandler)
     try:
-        filerunner.FileRunner(*args)
+        exitcode = filerunner.FileRunner(*args)
         filename = os.path.splitext(os.path.split(args[1])[1])[0]
         root.info('File %s completed' %filename)
+        #exitcode = 0
     except Exception as someException:
+        #errorHandler = QueueHandler(queue)
+        #errorHandler.setLevel(logging.ERROR)
+        #root.addHandler(errorHandler)
+        root.error("logging error")
         root.error(someException)
+        exitcode = -1
     finally:
-        return
+        root.removeHandler(processHandler)
+        return exitcode
     
 
 def main(argv):
