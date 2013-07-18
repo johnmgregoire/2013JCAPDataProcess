@@ -1,24 +1,23 @@
 # Allison Schubauer and Daisy Hernandez
 # Created: 6/27/2013
-# Last Updated: 7/8/2013
+# Last Updated: 7/18/2013
 # For JCAP
 
-import time
-import os, os.path
+import os
 import sys
-import itertools, re
+
+sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
+
+import re
 import numpy
 import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
-from fomautomator import FUNC_DIR, XML_DIR
-from rawdataparser import RAW_DATA_PATH
 import fomautomator
 import path_helpers
-
-
-sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
-    
 import mysql_dbcommlib 
+
+from fomautomator import FUNC_DIR, XML_DIR
+from rawdataparser import RAW_DATA_PATH
 
 MOD_NAME = 'fomfunctions'
 UPDATE_MOD_NAME = 'fomfunctions_update'
@@ -29,11 +28,11 @@ UPDATE_MOD_NAME = 'fomfunctions_update'
 
 class echemvisDialog(QtGui.QMainWindow):
 
-    """ handles all the initializing - currently does nothing with this folderpath"""
+    """ handles all the initializing - currently does nothing with folderpath"""
     def __init__(self, parent=None, title='', folderpath=None):
+        
         super(echemvisDialog, self).__init__()
         self.parent=parent
-
         self.paths = []
         self.progModule = None
         self.updateModule = None
@@ -43,6 +42,7 @@ class echemvisDialog(QtGui.QMainWindow):
 
     """ initializes the user interface """
     def initUI(self):
+        
         self.setGeometry(300, 200, 150, 150)
         self.setWindowTitle('Processing Files')
 
@@ -53,12 +53,18 @@ class echemvisDialog(QtGui.QMainWindow):
         self.mainWidget.setLayout(self.mainLayout)
 
         self.prog_label = QtGui.QLineEdit()
-        self.prog_label.setReadOnly(True)
         self.message_label = QtGui.QLabel()
-        self.files_label = QtGui.QLabel()
+        self.files_label = QtGui.QLineEdit()
+        self.default_label = QtGui.QLabel()
+        self.prog_label.setReadOnly(True)
+        self.files_label.setReadOnly(True)
         self.message_label.setText("Which files would you like to run your analysis on?")
+        self.default_label.setText("Check to use default parameter values:")
         self.files_label.setText("")
 
+        self.defaultButton=QtGui.QCheckBox(self)
+        self.defaultButton.setChecked(True)
+        
         self.progButton=QtGui.QPushButton("Select Program", self)
         self.methodButton=QtGui.QPushButton("select\ninput method", self)
         self.folderButton=QtGui.QPushButton("select\nfolder", self)
@@ -73,9 +79,11 @@ class echemvisDialog(QtGui.QMainWindow):
         self.mainLayout.addWidget(self.prog_label,1,0)
         self.mainLayout.addWidget(self.message_label,2,0)
         self.mainLayout.addWidget(self.methodButton,3,0)
-        self.mainLayout.addWidget(self.folderButton,4,0)
-        self.mainLayout.addWidget(self.files_label,5,0)
-        self.mainLayout.addWidget(self.runButton,6,0)
+        self.mainLayout.addWidget(self.default_label,4,0)
+        self.mainLayout.addWidget(self.defaultButton,4,1)
+        self.mainLayout.addWidget(self.folderButton,5,0)
+        self.mainLayout.addWidget(self.files_label,6,0)
+        self.mainLayout.addWidget(self.runButton,7,0)
 
         # hide the buttons -- we haven't selected a method nor do we have files
         if self.dbdatasource:
@@ -86,10 +94,12 @@ class echemvisDialog(QtGui.QMainWindow):
 
     """ initializes datamembers related to the database """
     def initDB(self):
+        
         self.dbdatasource = True
 
     """ sets either the database connection or says that we're doing manual selection """    
     def methodSetter(self, folderpath = None):
+        
         if folderpath is None:
             self.dbdatasource_temp=userinputcaller(self.parent, inputs=[('DBsource?', bool, '1')], title='Change to 0 to read for local harddrive.')
             # if we didn't select a method and clicked exit instead - exit the process by returning 0
@@ -107,6 +117,7 @@ class echemvisDialog(QtGui.QMainWindow):
         return 1
 
     def filePathDecider(self, folderpath=None):
+        
         if folderpath is None:
             self.folderpath=None
             self.selectfolder()
@@ -115,6 +126,7 @@ class echemvisDialog(QtGui.QMainWindow):
 
     """ creates  a new database conection """
     def createdbsession(self):
+        
         ans=userinputcaller(self.parent, inputs=[('user:', str, ''), ('password:', str, '')], title='Enter database credentials', cancelallowed=True)
         # if we fail
         if ans is None:
@@ -128,6 +140,8 @@ class echemvisDialog(QtGui.QMainWindow):
             return 0
             
     def selectmethod(self,folderpath=None):
+        
+        self.files_label.setText("")
         # we didn't select a method, so we return to the main gui
         if not self.methodSetter(folderpath):
             return
@@ -156,7 +170,9 @@ class echemvisDialog(QtGui.QMainWindow):
                                                            self.progModule,
                                                            self.updateModule,
                                                            self.exptypes,XML_DIR,RAW_DATA_PATH)
-                params = self.getParams(default=False)
+
+                
+                params = self.getParams(default=self.defaultButton.isChecked())
                 if not params:
                     return 1
                 funcNames, paramsList = params
@@ -165,6 +181,7 @@ class echemvisDialog(QtGui.QMainWindow):
 
                                  
     def selectfolder(self, plate_id=None, selectexids=None, folder=None):
+        
         # hide the run, we're in process of selecting files.
         self.runButton.hide()
 
@@ -212,8 +229,10 @@ class echemvisDialog(QtGui.QMainWindow):
                 self.folderpath=folder
             # since we're not doing database and we already  took some files, we can show some buttons again
             self.folderButton.show()
-
-        thepaths = self.getPathInfo()
+        try:
+            thepaths = self.getPathInfo()
+        except:
+            return 0
         self.message_label.setText("If you wish to select another folder, please use the button below")
         plateExperiment = "Plate " + str(self.plate_id) + " Experiments " + str(self.selectexids)
         self.files_label.setText(str(self.folderpath or plateExperiment))
@@ -227,6 +246,7 @@ class echemvisDialog(QtGui.QMainWindow):
 
     """ gets the path info and returns them as a list """
     def getPathInfo(self, ext='.txt'):
+        
         if self.dbdatasource:
             fns = self.dbrecarrd['dc_data__t_v_a_c_i']
             pathstoread_temp=[os.path.join(os.path.join('J:/hte_echemdrop_proto/data','%d' %self.plate_id), fn) for fn in fns]
@@ -237,6 +257,7 @@ class echemvisDialog(QtGui.QMainWindow):
         return pathstoread
     
     def userselectdbinds(self):
+        
         t=self.dbrecarrd['created_at']
         ex=self.dbrecarrd['experiment_no']
         tn=self.dbrecarrd['technique_name']
@@ -256,6 +277,7 @@ class echemvisDialog(QtGui.QMainWindow):
         print self.exptypes
 
     def selectProgram(self):
+        
         self.programDialog = QtGui.QFileDialog(self,
                                                caption = "Select a version folder containing data analysis scripts",
                                                directory = FUNC_DIR)
@@ -320,7 +342,9 @@ class echemvisDialog(QtGui.QMainWindow):
 ################################################################################
            
 class selectdbsessionsDialog(QtGui.QDialog):
+    
     def __init__(self, parent, ex_trange_techl, maxsessions=15, title='Select DB experiment sessions to analyze'):
+        
         super(selectdbsessionsDialog, self).__init__(parent)
         self.setWindowTitle(title)
         self.mainLayout=QtGui.QVBoxLayout()
@@ -358,6 +382,7 @@ class selectdbsessionsDialog(QtGui.QDialog):
         QtCore.QMetaObject.connectSlotsByName(self)
         
     def ExitRoutine(self):
+        
         self.selectinds=[]
         for cb, l in zip(self.cblist, self.cbinds):
             if cb.isChecked():
@@ -370,7 +395,9 @@ class selectdbsessionsDialog(QtGui.QDialog):
                 
 """ a class that helps us create QDialog for user input """
 class userinputDialog(QtGui.QDialog):
+    
     def __init__(self, parent, inputs=[('testnumber', int, '')], title='Enter values'):
+        
         super(userinputDialog, self).__init__(parent)
         self.setWindowTitle(title)
         self.mainLayout= QtGui.QGridLayout()
@@ -412,6 +439,7 @@ class userinputDialog(QtGui.QDialog):
         self.ok=False
 
     def ExitRoutine(self):
+        
         self.ok=True
         self.problem=False
         self.ans=[]
@@ -433,7 +461,9 @@ class userinputDialog(QtGui.QDialog):
 
 """ class for delivering simple messages through a QDialog box"""            
 class messageDialog(QtGui.QDialog):
+    
     def __init__(self, parent=None, title=''):
+        
         super(messageDialog, self).__init__(parent)
         
         self.setWindowTitle(title)
@@ -451,6 +481,7 @@ class messageDialog(QtGui.QDialog):
         self.setLayout(self.mainLayout)
         
     def ExitRoutine(self):
+        
         return
 
     
@@ -460,6 +491,7 @@ class messageDialog(QtGui.QDialog):
             
 """ assist in creating dialog boxes for the user to input information we need """
 def userinputcaller(parent, inputs=[('testnumber', int)], title='Enter values',  cancelallowed=True):
+    
     problem=True
     while problem:
         idialog=userinputDialog(parent, inputs, title)
@@ -473,8 +505,9 @@ def userinputcaller(parent, inputs=[('testnumber', int)], title='Enter values', 
 
 """ helps select a folder directory """
 def mygetdir(parent=None, xpath="%s" % os.getcwd(),markstr='' ):
+    
     if parent is None:
-        xapp = QtGui.QApplication(sys.argv)
+        xapp = QtGui.QApplication(sys.argv)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
         xparent = QWidget()
         returnfn = unicode(QtGui.QFileDialog.getExistingDirectory(xparent,''.join(['Select directory:', markstr]), xpath))
         xparent.destroy()
@@ -484,6 +517,7 @@ def mygetdir(parent=None, xpath="%s" % os.getcwd(),markstr='' ):
                     
 """ evaluates c based on the type it is """
 def myevaluator(c, theType):
+    
     if c=='None':
         c=None
     elif c=='nan' or c=='NaN':
