@@ -3,7 +3,7 @@
 # Last Updated: 7/17/2013
 # For JCAP
 
-import os
+import os, sys
 import xmltranslator
 import jsontranslator
 import qhtest
@@ -17,30 +17,37 @@ JSON_PATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisJSON")
 INTERMED_PCK_PATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisIntermed")
 
 class FileRunner(object):
+
+    """ initializes a FileRunner which only processes the data of one file"""
     def __init__(self, queue, expfile, xmlpath, version, lastversion, modname,
                  updatemod, newparams, funcdicts, outDir, rawDataDir):
         self.txtfile = expfile
         self.expfilename = os.path.splitext(os.path.split(self.txtfile)[1])[0]
         self.version = version
-        #self.modname = modname
         self.outDir = outDir
         self.rawDataDir = rawDataDir
         self.fdicts = funcdicts
-        funcMod = __import__(modname)
-        self.FOMs, self.interData, self.params = {}, {}, {}
         # this is probably temporary
         oldversion = None
+        self.FOMs, self.interData, self.params = {}, {}, {}
+        # if we have a previous version of the module along with a path to the xml file, we check if
+        # it is possible to use the update module
         if lastversion and xmlpath:
             oldversion, self.FOMs, self.interData, self.params = xmltranslator.getDataFromXML(xmlpath)
             #oldversion = path_helpers.getVersionFromPath(pckpath)
             #self.FOMs, self.interData, self.params = pickle.load(pckpath)
             if lastversion == oldversion:
+                
                 funcMod = __import__(updatemod)
             else:
                 self.FOMs, self.interData, self.params = {}, {}, {}
+                funcMod = __import__(modname)
+        else:
+            funcMod = __import__(modname)
+            
         for param in newparams:
             self.params[param] = newparams[param]
-        # look for raw data dictionary before creating one from the text file
+        # look for a raw data dictionary before creating one from the text file
         try:
             rawdatafile = os.path.join(self.rawDataDir,
                                        [fname for fname in os.listdir(self.rawDataDir)
@@ -50,7 +57,6 @@ class FileRunner(object):
         with open(rawdatafile) as rawdata:
             self.rawData = pickle.load(rawdata)
 
-        #funcMod = __import__(self.modname)
         allFuncs = [f[1] for f in inspect.getmembers(funcMod, inspect.isfunction)]
         validDictArgs = [self.rawData, self.interData]
         expType = self.rawData.get('BLTechniqueName')

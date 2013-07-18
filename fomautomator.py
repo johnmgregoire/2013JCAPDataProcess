@@ -31,7 +31,6 @@ class FOMAutomator(object):
     """ initializes the automator with all necessary information """
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
                  funcModule, updateModule, expTypes, outDir, rawDataDir):
-        
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
@@ -53,7 +52,6 @@ class FOMAutomator(object):
 
     """ starts running the jobs in parrallel and initilizes logging """
     def runParallel(self):
-        
         # setting up the manager and things required to log due to multiprocessing
         pmanager = Manager()
         loggingQueue = pmanager.Queue()
@@ -81,7 +79,6 @@ class FOMAutomator(object):
 
     """ returns a dicitonary with all the parameters and batch variables in """
     def processFuncs(self):
-        
         self.params = {}
         self.funcDicts = {}
         self.allFuncs = []
@@ -124,7 +121,6 @@ class FOMAutomator(object):
 
     """ changes the parameter value in the function dictionary """
     def setParams(self, funcNames, paramsList):
-        
         for fname, params in zip(funcNames, paramsList):
             fdict = self.funcDicts[fname]
             param,val = params
@@ -134,7 +130,6 @@ class FOMAutomator(object):
     """ returns a list of the parameters if the default is false, else it returns
         the functions and values that can be passed to setParams """
     def requestParams(self,default=True):
-        
         funcNames = (self.processFuncs().keys())
         funcNames.sort()
         params_full = [[ fname, [(pname,type(pval),pval) for pname in self.funcDicts[fname]['params']
@@ -210,10 +205,10 @@ def main(argv):
 
     xmlFiles = path_helpers.getFolderFiles(outputDir,'.xml')
     versionName, prevVersion = fomautomator_helpers.getVersions(FUNC_DIR)
-    versionName, prevVersion  = '0', ''
+    updateModule = "fomfunctions_update"
+    #versionName, prevVersion, updateModule = '201307180', '', None
     sys.path.insert(1, os.path.join(FUNC_DIR,versionName))
     progModule = "fomfunctions"
-    updateModule = None
     exptypes = []
     
     automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,updateModule,exptypes,XML_DIR,RAW_DATA_PATH)
