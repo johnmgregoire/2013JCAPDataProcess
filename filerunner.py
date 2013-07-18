@@ -75,11 +75,6 @@ class FileRunner(object):
         # need to save all dictionaries in pickle file, then remove certain
         #   intermediates, then save JSON and XML files
         self.saveXML()
-        #processHandler = qhtest.QueueHandler(queue)  
-        #root = logging.getLogger()
-        #root.setLevel('INFO')
-        #root.addHandler(processHandler)
-        #root.info('File %s completed' %self.expfilename)
         return
 
     def accessDict(self, fname, varset, argname):
