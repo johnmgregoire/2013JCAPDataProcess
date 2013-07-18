@@ -63,7 +63,8 @@ class FOMAutomator(object):
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         statusHandler.setFormatter(logFormat)
         errorHandler.setFormatter(logFormat)
-        errorHandler.setLevel('ERROR')
+        #errorHandler.setLevel(logging.ERROR)
+        errorHandler.addFilter(ErrorFilter())
         fileLogger = QueueListener(loggingQueue, statusHandler, errorHandler)
         fileLogger.start()
         
@@ -149,15 +150,19 @@ class FOMAutomator(object):
 
             return funcs_names, params_and_answers
 
+class ErrorFilter(logging.Filter):
+    def __init__(self, name=''):
+        super(ErrorFilter, self).__init__(name)
+
+    def filter(self, record):
+        return record.levelno == logging.ERROR
+
 def makeFileRunner(args):
     queue = args[0]
     root = logging.getLogger()
-    root.setLevel('INFO')
-    processErrorHandler = QueueHandler(queue)
-    processErrorHandler.setLevel('ERROR')
-    processStatusHandler = QueueHandler(queue)
-    root.addHandler(processErrorHandler)
-    root.addHandler(processStatusHandler)
+    root.setLevel(logging.INFO)
+    processHandler = QueueHandler(queue)
+    root.addHandler(processHandler)
     try:
         filerunner.FileRunner(*args)
         filename = os.path.splitext(os.path.split(args[1])[1])[0]
