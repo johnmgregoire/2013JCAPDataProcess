@@ -5,12 +5,16 @@
 
 import os
 import xmltranslator
+import jsontranslator
 import qhtest
 import rawdataparser
 import cPickle as pickle
 import inspect
 import itertools
 import logging
+
+JSON_PATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisJSON")
+INTERMED_PCK_PATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisIntermed")
 
 class FileRunner(object):
     def __init__(self, queue, expfile, xmlpath, version, lastversion, modname,
@@ -23,9 +27,13 @@ class FileRunner(object):
         self.rawDataDir = rawDataDir
         self.fdicts = funcdicts
         funcMod = __import__(modname)
-        self.FOMs, self.interData, self.params = {}, {}, {}     
+        self.FOMs, self.interData, self.params = {}, {}, {}
+        # this is probably temporary
+        oldversion = None
         if lastversion and xmlpath:
             oldversion, self.FOMs, self.interData, self.params = xmltranslator.getDataFromXML(xmlpath)
+            #oldversion = path_helpers.getVersionFromPath(pckpath)
+            #self.FOMs, self.interData, self.params = pickle.load(pckpath)
             if lastversion == oldversion:
                 funcMod = __import__(updatemod)
             else:
@@ -46,10 +54,10 @@ class FileRunner(object):
         allFuncs = [f[1] for f in inspect.getmembers(funcMod, inspect.isfunction)]
         validDictArgs = [self.rawData, self.interData]
         expType = self.rawData.get('BLTechniqueName')
-        print 'expType:', expType
+        #print 'expType:', expType
         targetFOMs = funcMod.validFuncs.get(expType)
         if not targetFOMs:
-            print self.txtfile
+            #print self.txtfile
             return
         fomFuncs = [func for func in allFuncs if func.func_name in targetFOMs]
         for funcToRun in fomFuncs:
@@ -74,6 +82,15 @@ class FileRunner(object):
                     self.FOMs[('_').join(map(str, varset))+'_'+fname] = fom
         # need to save all dictionaries in pickle file, then remove certain
         #   intermediates, then save JSON and XML files
+        # TEMPORARY:
+        lastDataFile = ''
+        if oldversion:
+            lastDataFile = os.path.join(INTERMED_PCK_PATH,
+                                        self.expfilename+'_'+oldversion+'.pck')
+        self.savePck(INTERMED_PCK_PATH, lastDataFile)
+        # remove intermediates that aren't same length as raw data
+        self.stripData()
+        self.saveJSON(JSON_PATH)
         self.saveXML()
         return
 
@@ -95,6 +112,36 @@ class FileRunner(object):
                 #   is something that should definitely be tested in
                 #   the committer
                 print argname, "is not a valid argument"
+
+    def stripData(self):
+        rawDataLength = -1
+        for variable, val in self.rawData.iteritems():
+            if isinstance(val, jsontranslator.numpy.ndarray):
+                rawDataLength = len(val)
+                break
+        else:
+            # We don't want the program to ever get to this
+            #   point. There will need to be some verfication
+            #   of the pickle file when we load it.
+            print "corrupt raw data"
+        for ikey, ival in self.interData.items():
+            if (isinstance(ival, jsontranslator.numpy.ndarray) or
+                isinstance(ival, list)):
+                if len(ival) != rawDataLength:
+                    self.interData.pop(ikey, None)
+
+    def savePck(self, directory, oldfilename):
+        # remove old version of intermediate data for this file
+        if oldfilename:
+            os.path.remove(oldfilename)
+        savepath = os.path.join(directory, self.expfilename+'_'+self.version+'.pck')
+        with open(savepath, 'w') as pckfile:
+            pickle.dump((self.FOMs, self.interData, self.params), pckfile)
+
+    def saveJSON(self, directory):
+        savepath = os.path.join(directory, self.expfilename+'.json')
+        dataTup = (self.FOMs, self.interData, self.params)
+        jsontranslator.toJSON(savepath, self.version, dataTup)
 
     def saveXML(self):
         savepath = os.path.join(self.outDir, self.expfilename+'.xml')

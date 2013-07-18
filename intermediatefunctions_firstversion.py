@@ -88,7 +88,7 @@ def calcdiff_stepill(rawd, interd, ikey='Illum', ykeys=['Ewe(V)'], xkeys=['t(s)'
     fallinds=numpy.where(numpy.logical_not(illum[1:])&illum[:-1])[0]+1
     
     if len(fallinds)==0 and len(riseinds)==0:
-        print 'insufficient light cycles'
+        #print 'insufficient light cycles'
         return 1
     if illum[0]:
         illstart=0
@@ -137,12 +137,12 @@ def calcdiff_choppedill(rawd, interd, ikey='Illum', ykeys=['I(A)'], xkeys=['t(s)
     riseinds=numpy.where(illum[1:]&numpy.logical_not(illum[:-1]))[0]+1
     fallinds=numpy.where(numpy.logical_not(illum[1:])&illum[:-1])[0]+1
     if len(fallinds)<2 or len(riseinds)==0:
-        print 'insufficient light cycles'
+        #print 'insufficient light cycles'
         return 1
     riseinds=riseinds[riseinds<fallinds[-1]]#only consider illum if there is a dark before and after
     fallinds=fallinds[fallinds>riseinds[0]]
     if len(fallinds)<2 or len(riseinds)==0:
-        print 'insufficient light cycles'
+        #print 'insufficient light cycles'
         return 1
     ill_istart, ill_len=istart_len_calc(riseinds, fallinds, illfracrange)
     darkstart, darkend=numpy.where(numpy.logical_not(illum))[0][[0, -1]]

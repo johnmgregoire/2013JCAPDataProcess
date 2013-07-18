@@ -10,23 +10,37 @@ import csv
 import json
 import numpy
 
-SAVEPATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisJSON")
+#SAVEPATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisJSON")
 
-def toJSON(filename, fomdict, intermeddict, inputdict):
-    savepath = os.path.join(SAVEPATH, filename+'.json')
+##def toJSON(filename, fomdict, intermeddict, inputdict):
+##    savepath = os.path.join(SAVEPATH, filename+'.json')
+##    with open(savepath, 'w') as fileObj:
+##        dataTup = (fomdict, intermeddict, inputdict)
+##        listOfObjs = []
+##        for dataDict in dataTup:
+##            listOfObjs.append(convertNpTypes(dataDict))
+##        json.dump(listOfObjs, fileObj)
+##    return savepath
+
+def toJSON(savepath, version, dataTup):
     with open(savepath, 'w') as fileObj:
-        dataTup = (fomdict, intermeddict, inputdict)
-        listOfObjs = []
+        listOfObjs = [version]
         for dataDict in dataTup:
             listOfObjs.append(convertNpTypes(dataDict))
         json.dump(listOfObjs, fileObj)
-    return savepath
+    return listOfObjs
 
-def fromJSON(filepath):
+##def fromJSON(filepath):
+##    with open(filepath, 'r') as fileObj:
+##        dataTup = json.load(fileObj, object_hook=unicodeToString)
+##    print dataTup
+##    return dataTup
+
+def getDataFromJSON(filepath):
     with open(filepath, 'r') as fileObj:
-        dataTup = json.load(fileObj, object_hook=unicodeToString)
-    print dataTup
-    return dataTup
+        version, fomDict, intermedDict, paramDict = json.load(fileObj,
+                                                              object_hook=unicodeToString)
+    return (version, fomDict, intermedDict, paramDict)
 
 def convertNpTypes(container):
     if isinstance(container, dict):

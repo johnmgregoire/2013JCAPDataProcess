@@ -166,13 +166,10 @@ def makeFileRunner(args):
         exitcode = filerunner.FileRunner(*args)
         filename = os.path.splitext(os.path.split(args[1])[1])[0]
         root.info('File %s completed' %filename)
-        #exitcode = 0
     except Exception as someException:
-        #errorHandler = QueueHandler(queue)
-        #errorHandler.setLevel(logging.ERROR)
-        #root.addHandler(errorHandler)
-        root.error("logging error")
-        root.error(someException)
+        # root.exception will log an ERROR with printed traceback;
+        #   root.error will log an ERROR without traceback
+        root.exception(someException)
         exitcode = -1
     finally:
         root.removeHandler(processHandler)

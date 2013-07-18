@@ -24,7 +24,12 @@ def getARecentFolder(directory,num):
     else:
         return None
 
-""" gives an a a path to given directory and with the given extension but has
+""" gives a path to given directory and with the given extension but has
     the same naming scheme as the given file """
 def giveAltPathAndExt(directory,currentpath,extension):
      return os.path.join(directory,os.path.splitext(os.path.basename(currentpath))[0]+ extension)
+
+""" returns the version number from a path to a file of the format
+    rawdatafilename_version """
+def getVersionFromPath(path):
+    return os.path.splitext(os.path.basename)[0].split('_')[1]
