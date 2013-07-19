@@ -106,6 +106,7 @@ class QueueListener(object):
         self.handlers = handlers
         self._stop = threading.Event()
         self._thread = None
+        self.errorCount = 0
 
     def dequeue(self, block):
         """
@@ -145,6 +146,9 @@ class QueueListener(object):
         to handle.
         """
         record = self.prepare(record)
+        if record.levelname == "ERROR":
+            self.errorCount+=1
+            
         for handler in self.handlers:
             handler.handle(record)
 
