@@ -146,8 +146,12 @@ class QueueListener(object):
         to handle.
         """
         record = self.prepare(record)
+        
         if record.levelname == "ERROR":
-            self.errorCount+=1
+            try:
+                self.errorCount+=1
+            except:
+                pass
             
         for handler in self.handlers:
             handler.handle(record)

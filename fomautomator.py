@@ -14,7 +14,8 @@ import cPickle as pickle
 from multiprocessing import Process, Pool, Manager
 from inspect import *
 from rawdataparser import RAW_DATA_PATH
-from qhtest import *
+from qhtest import * # this also imports queue 
+import Queue
 import jsontranslator
 import xmltranslator
 import importlib
@@ -22,6 +23,7 @@ import distutils.util
 import path_helpers
 import fomautomator_helpers
 import filerunner
+import time
 
 FUNC_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisFunctions"))
 XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML"))
@@ -29,8 +31,8 @@ XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnal
 class FOMAutomator(object):
     
     """ initializes the automator with all necessary information """
-    def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
-                 funcModule, updateModule, expTypes, xmlDir, rawDataDir):
+    def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,funcModule,
+                 updateModule, expTypes, outDir, rawDataDir,errorNum,jobname):
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
@@ -38,13 +40,15 @@ class FOMAutomator(object):
         self.modname = funcModule
         self.updatemod = updateModule
         self.expTypes = expTypes
-        self.xmlDir = xmlDir
+        self.outDir = outDir
         self.rawDataDir = rawDataDir
+        self.errorNum = errorNum
+        self.jobname=jobname
         self.files = []
 
         # setting up everything having to do with saving the XML files
         for rdpath in rawDataFiles:
-            xmlpath = path_helpers.giveAltPathAndExt(xmlDir,rdpath,'.xml')
+            xmlpath = path_helpers.giveAltPathAndExt(outDir,rdpath,'.xml')
             if xmlpath in xmlFiles:
                 self.files.append((rdpath, xmlpath))
             else:
@@ -68,7 +72,7 @@ class FOMAutomator(object):
         # the jobs to process each of the files
         jobs = [(loggingQueue, filename, xmlpath, self.version,
                  self.lastVersion, self.modname, self.updatemod,
-                 self.params, self.funcDicts, self.xmlDir, self.rawDataDir)
+                 self.params, self.funcDicts, self.outDir, self.rawDataDir)
                 for (filename, xmlpath) in self.files]
         processPool.map(makeFileRunner, jobs)
         processPool.close()
@@ -77,6 +81,59 @@ class FOMAutomator(object):
         statusHandler.close()
         errorHandler.close()
 
+    """ runs the files inin order and loggs errors accordingly"""
+    def runSequentially(self):
+        # setting up everything needed for the loggers
+        loggingQueue = Queue.Queue()
+        statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
+        statusHandler = logging.FileHandler('test.log')
+        errorHandler = logging.FileHandler('testerror.log')
+        fileHandler = logging.FileHandler(statusFileName)
+        logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        statusHandler.setFormatter(logFormat)
+        errorHandler.setFormatter(logFormat)
+        errorHandler.addFilter(ErrorFilter())
+        fileLogger = QueueListener(loggingQueue, statusHandler, errorHandler, fileHandler)
+        fileLogger.start()
+
+        root = logging.getLogger()
+        root.setLevel(logging.INFO)
+        processHandler = QueueHandler(loggingQueue)
+        root.addHandler(processHandler)
+
+        numberOfErrors = 0
+        numberOfFiles = len(self.files)
+        bTime= time.time()
+        
+        # The file processing occurs here
+        logQueue = None
+        for i, (filename, xmlpath) in enumerate(self.files):
+            if numberOfErrors > self.errorNum:
+                break
+            try:
+                root.info("Processing file " + str(filename) + ' '+ str(i)+"/" +str(numberOfFiles)+"\n")
+                exitcode = filerunner.FileRunner(logQueue,filename,xmlpath, self.version,
+                                                 self.lastVersion, self.modname, self.updatemod,
+                                                 self.params, self.funcDicts,self.outDir, self.rawDataDir)
+            except Exception as someException:
+                # root.exception will log an ERROR with printed traceback;
+                #   root.error will log an ERROR without traceback
+                root.exception(someException)
+                exitcode = -1
+                numberOfErrors+=1
+
+        root.removeHandler(processHandler)
+        fileLogger.stop()      
+        statusHandler.close()
+        errorHandler.close()
+        if numberOfErrors > self.errorNum:
+            pass
+            os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".error"))
+        else:
+            pass
+            os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".done"))
+
+        
     """ returns a dicitonary with all the parameters and batch variables in """
     def processFuncs(self):
         self.params = {}
@@ -184,7 +241,7 @@ def main(argv):
     paths = []
     outputDir = None
     jobname = ""
-    max_errors = 10
+    max_errors = 3
 
     if not (args.inputfolder or args.inputfile or args.fileofinputs):
         parser.error('Cannot proceed further as no form of input was specified Plesase use either -I,-i, or -f, please.')
@@ -202,6 +259,8 @@ def main(argv):
         except:
             #TODO: Putt a message to the logger
             pass
+    if args.jobname:
+        jobname=args.jobname[0]
 
     if args.errornum:
         max_errors = args.errornum[0]
@@ -220,10 +279,11 @@ def main(argv):
     rawPath = RAW_DATA_PATH
 
     if paths:
-        automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,updateModule,exptypes, xmlPath,rawPath)
+        automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,updateModule,exptypes, xmlPath,rawPath,max_errors,jobname)
         funcNames, paramsList = automator.requestParams(default=True)
         automator.setParams(funcNames, paramsList)
-        automator.runParallel()
+        #automator.runParallel()
+        automator.runSequentially()
         
 
 if __name__ == "__main__":

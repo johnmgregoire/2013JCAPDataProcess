@@ -1,6 +1,6 @@
 # Allison Schubauer and Daisy Hernandez
 # Created: 7/12/2013
-# Last Updated: 7/15/2013
+# Last Updated: 7/22/2013
 # For JCAP
 
 import os
@@ -33,3 +33,7 @@ def giveAltPathAndExt(directory,currentpath,extension):
     rawdatafilename_version """
 def getVersionFromPath(path):
     return os.path.splitext(os.path.basename)[0].split('_')[1]
+
+""" returns a path for the given filename at the directory and with the extention """
+def createPathWExtention(directory,filename,extention):
+    return os.path.join(directory,filename + extention)
