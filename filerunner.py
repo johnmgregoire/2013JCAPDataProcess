@@ -93,7 +93,7 @@ class FileRunner(object):
         if oldversion:
             lastDataFile = os.path.join(INTERMED_PCK_PATH,
                                         self.expfilename+'_'+oldversion+'.pck')
-        self.savePck(INTERMED_PCK_PATH, lastDataFile)
+        #self.savePck(INTERMED_PCK_PATH, lastDataFile)
         # remove intermediates that aren't same length as raw data
         self.stripData()
         self.saveJSON(JSON_PATH)

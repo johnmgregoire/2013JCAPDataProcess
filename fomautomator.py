@@ -153,17 +153,19 @@ class ErrorFilter(logging.Filter):
 
 def makeFileRunner(args):
     queue = args[0]
+    filename = os.path.splitext(os.path.split(args[1])[1])[0]
     root = logging.getLogger()
     root.setLevel(logging.INFO)
     processHandler = QueueHandler(queue)
     root.addHandler(processHandler)
     try:
         exitcode = filerunner.FileRunner(*args)
-        filename = os.path.splitext(os.path.split(args[1])[1])[0]
         root.info('File %s completed' %filename)
     except Exception as someException:
         # root.exception will log an ERROR with printed traceback;
         #   root.error will log an ERROR without traceback
+        #root.exception('%s:'+str(someException) %filename)
+        #root.info('%s:'+str(someException) %filename)
         root.exception(someException)
         exitcode = -1
     finally:
