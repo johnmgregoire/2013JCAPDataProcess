@@ -11,7 +11,6 @@ import rawdataparser
 import cPickle as pickle
 import inspect
 import itertools
-import logging
 
 JSON_PATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisJSON")
 INTERMED_PCK_PATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisIntermed")
@@ -37,7 +36,6 @@ class FileRunner(object):
             #oldversion = path_helpers.getVersionFromPath(pckpath)
             #self.FOMs, self.interData, self.params = pickle.load(pckpath)
             if lastversion == oldversion:
-                
                 funcMod = __import__(updatemod)
             else:
                 self.FOMs, self.interData, self.params = {}, {}, {}
