@@ -64,7 +64,7 @@ class FOMAutomator(object):
         errorHandler.addFilter(ErrorFilter())
         fileLogger = QueueListener(loggingQueue, statusHandler, errorHandler)
         fileLogger.start()
-
+        
         # the jobs to process each of the files
         jobs = [(loggingQueue, filename, xmlpath, self.version,
                  self.lastVersion, self.modname, self.updatemod,
@@ -73,7 +73,7 @@ class FOMAutomator(object):
         processPool.map(makeFileRunner, jobs)
         processPool.close()
         processPool.join()
-        fileLogger.stop()
+        fileLogger.stop()      
         statusHandler.close()
         errorHandler.close()
 
@@ -210,7 +210,6 @@ def main(argv):
         outputDir = args.outputfolder[0]    
  
     # Now we use this arguments to set up the automator
-    paths = []
     xmlFiles = path_helpers.getFolderFiles(outputDir,'.xml')
     versionName, prevVersion = fomautomator_helpers.getVersions(FUNC_DIR)
     updateModule = "fomfunctions_update"
@@ -220,15 +219,15 @@ def main(argv):
     xmlPath = XML_DIR
     rawPath = RAW_DATA_PATH
 
-    
-    automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,updateModule,exptypes, xmlPath,rawPath)
-    funcNames, paramsList = automator.requestParams(default=True)
-    automator.setParams(funcNames, paramsList)
-    automator.runParallel()
+    if paths:
+        automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,updateModule,exptypes, xmlPath,rawPath)
+        funcNames, paramsList = automator.requestParams(default=True)
+        automator.setParams(funcNames, paramsList)
+        automator.runParallel()
         
 
 if __name__ == "__main__":
     main(sys.argv[1:])
 
-# python fomautomator.py -I "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\1 File" -O "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\AutoAnalysisXML"
-# python fomautomator.py -I "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\1 File" -O "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\AutoAnalysisXML" -f "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\filewithfiles.txt"
+# python C:\Users\dhernand.HTEJCAP\Documents\GitHub\JCAPDataProcess\fomautomator.py -I "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\1 File" -O "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\AutoAnalysisXML"
+# python C:\Users\dhernand.HTEJCAP\Documents\GitHub\JCAPDataProcess\fomautomator.py -I "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\1 File" -O "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\AutoAnalysisXML" -f "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\filewithfiles.txt"
