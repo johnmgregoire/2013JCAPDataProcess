@@ -5,6 +5,8 @@ import os.path, ast, distutils.util
 
 numpy.set_printoptions(threshold=numpy.nan)
 
+DTD_DIR = os.path.normpath(os.path.expanduser("~/Documents/GitHub/JCAPDataProcess"))
+
 def toXML(filepath, verNum, dictTup):
     root = etree.Element("data", version=verNum)
     foms = etree.SubElement(root, "figures_of_merit")
@@ -70,13 +72,15 @@ def getDataFromXML(filepath):
     fomDict = {}
     intermedDict = {}
     paramDict = {}
-    parser = etree.XMLParser(dtd_validation=True)
     with open(filepath, 'rb') as xmlfile:
-        try:
-            docTree = etree.parse(xmlfile, parser)
-        except etree.XMLSyntaxError:
-            raise SyntaxError("%s is not a valid XML data file."
-                                       %os.path.basename(filepath))
+        docTree = etree.parse(xmlfile)
+        # get the name of the external DTD
+    dtdName = docTree.docinfo.system_url
+    dtdPath = os.path.join(DTD_DIR, dtdName)
+    dtd = etree.DTD(dtdPath)
+    if not dtd.validate(docTree):
+        raise SyntaxError("%s is not a valid XML data file."
+                          %os.path.basename(filepath))
     version = docTree.getroot().get("version")
     fomTree = docTree.find("figures_of_merit")
     intermedTree = docTree.find("intermediate_values")

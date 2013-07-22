@@ -31,8 +31,13 @@ XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnal
 class FOMAutomator(object):
     
     """ initializes the automator with all necessary information """
+<<<<<<< HEAD
     def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,funcModule,
                  updateModule, expTypes, outDir, rawDataDir,errorNum,jobname):
+=======
+    def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,
+                 funcModule, updateModule, expTypes, outDir, rawDataDir):
+>>>>>>> aa597b54eb0c4f7b0fb7e28a6f5683d4363f0f56
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
@@ -77,7 +82,7 @@ class FOMAutomator(object):
         processPool.map(makeFileRunner, jobs)
         processPool.close()
         processPool.join()
-        fileLogger.stop()      
+        fileLogger.stop()
         statusHandler.close()
         errorHandler.close()
 
@@ -210,18 +215,19 @@ class ErrorFilter(logging.Filter):
 
 def makeFileRunner(args):
     queue = args[0]
+    filename = os.path.splitext(os.path.split(args[1])[1])[0]
     root = logging.getLogger()
     root.setLevel(logging.INFO)
     processHandler = QueueHandler(queue)
     root.addHandler(processHandler)
     try:
         exitcode = filerunner.FileRunner(*args)
-        filename = os.path.splitext(os.path.split(args[1])[1])[0]
         root.info('File %s completed' %filename)
     except Exception as someException:
         # root.exception will log an ERROR with printed traceback;
         #   root.error will log an ERROR without traceback
-        root.exception(someException)
+        root.error('Exception raised in file %s:\n' %filename +repr(someException))
+        #root.exception(someException)
         exitcode = -1
     finally:
         root.removeHandler(processHandler)
@@ -230,17 +236,18 @@ def makeFileRunner(args):
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-I','--inputfolder', type=str, help="The input folder", nargs=1)
+    parser.add_argument('-I','--inputfolder', type=str, help="The input folder", nargs=1, required=True)
     parser.add_argument('-i', '--inputfile',  type=str, help="The input file",  nargs=1)
-    parser.add_argument('-f', '--fileofinputs', type=str, help="File containing input files", nargs=1)
+    parser.add_argument('-f', '--askabout', type=str, help="File containing input files", nargs=1)
     parser.add_argument('-J','--jobname', type=str, help="The job_name", nargs=1)
     parser.add_argument('-O', '--outputfolder', type=str, help="The output folder", nargs=1, required=True)
     parser.add_argument('-X', '--errornum', type=int, help="The maximum number of errors", nargs=1)
-    args = parser.parse_args(argv)
+    args = vars(parser.parse_args(argv))
 
     paths = []
     outputDir = None
     jobname = ""
+<<<<<<< HEAD
     max_errors = 3
 
     if not (args.inputfolder or args.inputfile or args.fileofinputs):
@@ -264,17 +271,35 @@ def main(argv):
 
     if args.errornum:
         max_errors = args.errornum[0]
+=======
+    max_errors = 10
+    
+    if args["inputfolder"]:
+        paths += path_helpers.getFolderFiles(args["inputfolder"][0], '.txt')
+    else:
+        return
+
+    if args["inputfile"]:
+        path += args["inputfolder"][0]
+
+    if args["errornum"]:
+        max_errors = args["errornum"][0]
+>>>>>>> aa597b54eb0c4f7b0fb7e28a6f5683d4363f0f56
         
-    if args.outputfolder:
-        outputDir = args.outputfolder[0]    
- 
-    # Now we use this arguments to set up the automator
+    if args["outputfolder"]:
+        outputDir = args["outputfolder"][0]
+    else:
+        return
+
+
     xmlFiles = path_helpers.getFolderFiles(outputDir,'.xml')
     versionName, prevVersion = fomautomator_helpers.getVersions(FUNC_DIR)
     updateModule = "fomfunctions_update"
+    #versionName, prevVersion, updateModule = '201307180', '', None
     sys.path.insert(1, os.path.join(FUNC_DIR,versionName))
     progModule = "fomfunctions"
     exptypes = []
+<<<<<<< HEAD
     xmlPath = XML_DIR
     rawPath = RAW_DATA_PATH
 
@@ -284,10 +309,16 @@ def main(argv):
         automator.setParams(funcNames, paramsList)
         #automator.runParallel()
         automator.runSequentially()
+=======
+    
+    automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,updateModule,exptypes,XML_DIR,RAW_DATA_PATH)
+    funcNames, paramsList = automator.requestParams(default=True)
+    automator.setParams(funcNames, paramsList)
+    automator.runParallel()
+>>>>>>> aa597b54eb0c4f7b0fb7e28a6f5683d4363f0f56
         
 
 if __name__ == "__main__":
     main(sys.argv[1:])
 
-# python C:\Users\dhernand.HTEJCAP\Documents\GitHub\JCAPDataProcess\fomautomator.py -I "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\1 File" -O "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\AutoAnalysisXML"
-# python C:\Users\dhernand.HTEJCAP\Documents\GitHub\JCAPDataProcess\fomautomator.py -I "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\1 File" -O "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\AutoAnalysisXML" -f "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\filewithfiles.txt"
+# python fomautomator.py -I "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\1 File" -O "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\AutoAnalysisXML"
