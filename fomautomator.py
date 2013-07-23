@@ -1,6 +1,6 @@
 # Allison Schubauer and Daisy Hernandez
 # Created: 6/26/2013
-# Last Updated: 7/17/2013
+# Last Updated: 7/23/2013
 # For JCAP
 
 """
@@ -15,7 +15,6 @@ from multiprocessing import Process, Pool, Manager
 from inspect import *
 from rawdataparser import RAW_DATA_PATH
 from qhtest import * # this also imports queue 
-import Queue
 import jsontranslator
 import xmltranslator
 import importlib
@@ -36,6 +35,8 @@ class FOMAutomator(object):
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
+        # the os.path.insert in either the gui or in the terminal argument
+        # reigion is what makes sure we select the right function Module
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
         self.updatemod = updateModule
@@ -43,7 +44,7 @@ class FOMAutomator(object):
         self.outDir = outDir
         self.rawDataDir = rawDataDir
         self.errorNum = errorNum
-        self.jobname=jobname
+        self.jobname = jobname
         self.files = []
 
         # setting up everything having to do with saving the XML files
@@ -60,13 +61,11 @@ class FOMAutomator(object):
         pmanager = Manager()
         loggingQueue = pmanager.Queue()
         processPool = Pool()
-        statusHandler = logging.FileHandler('test.log')
-        errorHandler = logging.FileHandler('testerror.log')
+        statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
+        fileHandler = logging.FileHandler(statusFileName)
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        statusHandler.setFormatter(logFormat)
-        errorHandler.setFormatter(logFormat)
-        errorHandler.addFilter(ErrorFilter())
-        fileLogger = QueueListener(loggingQueue, statusHandler, errorHandler)
+        fileHandler.setFormatter(logFormat)
+        fileLogger = QueueListener(loggingQueue, fileHandler)
         fileLogger.start()
         
         # the jobs to process each of the files
@@ -74,17 +73,31 @@ class FOMAutomator(object):
                  self.lastVersion, self.modname, self.updatemod,
                  self.params, self.funcDicts, self.outDir, self.rawDataDir)
                 for (filename, xmlpath) in self.files]
+        
         processPool.map(makeFileRunner, jobs)
+        
         processPool.close()
         processPool.join()
         fileLogger.stop()
-        statusHandler.close()
-        errorHandler.close()
+        fileHandler.close()
+        """try:
+            if numberOfErrors > self.errorNum:
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".error"))
+            else:
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".done"))
+        except:
+            if numberOfErrors > self.errorNum:
+                pass
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".error"))
+            else:
+                pass
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".done"))
+        """
 
     """ runs the files in order on a single process and logs errors """
     def runSequentially(self):
         # setting up everything needed for the loggers
-        loggingQueue = Queue.Queue()
+        loggingQueue = queue.Queue()
         statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
         fileHandler = logging.FileHandler(statusFileName)
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
