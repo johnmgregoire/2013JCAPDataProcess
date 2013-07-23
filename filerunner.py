@@ -85,13 +85,19 @@ class FileRunner(object):
                            itertools.product(*allvarsets) for varlist in
                            targetFOMs[fname]]:
                 # this is to make up for the fact that commonvars returns empty lists and
-                #   single-argument lists for two or more batch variables - probably shouldn't
-                #   be a permanent solution
+                #   single-argument lists for two or more batch variables
                 if len(varset) == len(fdict.get('batchvars')):
                     fom = funcToRun(**dict(zip(funcToRun.func_code.co_varnames[:funcToRun.func_code.co_argcount],
                                                 fdictargs+[self.accessDict(fname, varset, argname) for argname
                                                 in funcToRun.func_code.co_varnames[fdict['numdictargs']:funcToRun.func_code.co_argcount]])))
-                    self.FOMs[('_').join(map(str, varset))+'_'+fname] = fom
+                    # since figures of merit must be scalar, save lists of
+                    #   segmented figures of merit separately
+                    if isinstance(fom, list):
+                        for seg, val in enumerate(fom):
+                            self.FOMs[('_').join(map(str, varset))
+                                      +'_'+fname+'_'+str(seg)] = val
+                    else:
+                        self.FOMs[('_').join(map(str, varset))+'_'+fname] = fom
         # need to save all dictionaries in pickle file, then remove certain
         #   intermediates, then save JSON and XML files
         # TEMPORARY:
