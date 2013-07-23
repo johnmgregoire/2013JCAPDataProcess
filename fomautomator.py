@@ -81,7 +81,7 @@ class FOMAutomator(object):
         statusHandler.close()
         errorHandler.close()
 
-    """ runs the files inin order and loggs errors accordingly"""
+    """ runs the files in order on a single process and logs errors """
     def runSequentially(self):
         # setting up everything needed for the loggers
         loggingQueue = Queue.Queue()
