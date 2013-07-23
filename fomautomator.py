@@ -86,14 +86,9 @@ class FOMAutomator(object):
         # setting up everything needed for the loggers
         loggingQueue = Queue.Queue()
         statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
-        statusHandler = logging.FileHandler('test.log')
-        errorHandler = logging.FileHandler('testerror.log')
         fileHandler = logging.FileHandler(statusFileName)
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        statusHandler.setFormatter(logFormat)
-        errorHandler.setFormatter(logFormat)
-        errorHandler.addFilter(ErrorFilter())
-        fileLogger = QueueListener(loggingQueue, statusHandler, errorHandler, fileHandler)
+        fileLogger = QueueListener(loggingQueue, fileHandler)
         fileLogger.start()
 
         root = logging.getLogger()
@@ -126,8 +121,6 @@ class FOMAutomator(object):
         root.info("Processed for %f seconds" %(eTime-bTime,))
         root.removeHandler(processHandler)
         fileLogger.stop()      
-        statusHandler.close()
-        errorHandler.close()
         fileHandler.close()
         timeStamp = time.strftime('%Y%m%d%H%M%S',time.gmtime())
         try:
