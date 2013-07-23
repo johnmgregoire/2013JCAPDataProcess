@@ -55,6 +55,18 @@ class FileRunner(object):
         with open(rawdatafile) as rawdata:
             self.rawData = pickle.load(rawdata)
 
+        self.rawDataLength = -1
+        for variable, val in self.rawData.iteritems():
+            if isinstance(val, jsontranslator.numpy.ndarray):
+                self.rawDataLength = len(val)
+                break
+        else:
+            raise ValueError("Not a valid raw data file (check .txt or .pck file).")
+
+        # skip this file if it has fewer than 100 lines of data
+        if self.rawDataLength < 100:
+            return
+
         allFuncs = [f[1] for f in inspect.getmembers(funcMod, inspect.isfunction)]
         validDictArgs = [self.rawData, self.interData]
         expType = self.rawData.get('BLTechniqueName')
@@ -118,20 +130,10 @@ class FileRunner(object):
                 print argname, "is not a valid argument"
 
     def stripData(self):
-        rawDataLength = -1
-        for variable, val in self.rawData.iteritems():
-            if isinstance(val, jsontranslator.numpy.ndarray):
-                rawDataLength = len(val)
-                break
-        else:
-            # We don't want the program to ever get to this
-            #   point. There will need to be some verfication
-            #   of the pickle file when we load it.
-            print "corrupt raw data"
         for ikey, ival in self.interData.items():
             if (isinstance(ival, jsontranslator.numpy.ndarray) or
                 isinstance(ival, list)):
-                if len(ival) != rawDataLength:
+                if len(ival) != self.rawDataLength:
                     self.interData.pop(ikey, None)
 
     def savePck(self, directory, oldfilename):
