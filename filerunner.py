@@ -42,7 +42,6 @@ class FileRunner(object):
                 funcMod = __import__(modname)
         else:
             funcMod = __import__(modname)
-            
         for param in newparams:
             self.params[param] = newparams[param]
         # look for a raw data dictionary before creating one from the text file
@@ -54,7 +53,6 @@ class FileRunner(object):
             rawdatafile = rawdataparser.readechemtxt(self.txtfile)
         with open(rawdatafile) as rawdata:
             self.rawData = pickle.load(rawdata)
-
         self.rawDataLength = -1
         for variable, val in self.rawData.iteritems():
             if isinstance(val, jsontranslator.numpy.ndarray):
@@ -62,11 +60,9 @@ class FileRunner(object):
                 break
         else:
             raise ValueError("Not a valid raw data file (check .txt or .pck file).")
-
         # skip this file if it has fewer than 100 lines of data
         if self.rawDataLength < 100:
             return
-
         allFuncs = [f[1] for f in inspect.getmembers(funcMod, inspect.isfunction)]
         validDictArgs = [self.rawData, self.interData]
         expType = self.rawData.get('BLTechniqueName')

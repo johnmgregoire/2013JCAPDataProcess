@@ -158,12 +158,15 @@ class echemvisDialog(QtGui.QMainWindow):
             else:
                 xmlFiles = []
             if self.progModule:
+                errorNum = 0
+                jobName = "TestJobNameMenu"
                 self.automator = fomautomator.FOMAutomator(self.paths, xmlFiles,
                                                            self.versionName,
                                                            self.prevVersion,
                                                            self.progModule,
                                                            self.updateModule,
-                                                           self.exptypes,XML_DIR,RAW_DATA_PATH)
+                                                           self.exptypes,XML_DIR,RAW_DATA_PATH,
+                                                           errorNum,jobName)
 
                 
                 params = self.getParams(default=self.defaultButton.isChecked())

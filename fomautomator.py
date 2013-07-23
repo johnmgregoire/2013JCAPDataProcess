@@ -106,7 +106,7 @@ class FOMAutomator(object):
             if numberOfErrors > self.errorNum:
                 break
             try:
-                root.info("Processing file %s %d/%d" %(filename,i,numberOfFiles))
+                root.info("Processing file %s %d/%d" %(filename,i+1,numberOfFiles))
                 exitcode = filerunner.FileRunner(logQueue,filename,xmlpath, self.version,
                                                  self.lastVersion, self.modname, self.updatemod,
                                                  self.params, self.funcDicts,self.outDir, self.rawDataDir)
@@ -276,7 +276,6 @@ def main(argv):
     xmlFiles = path_helpers.getFolderFiles(outputDir,'.xml')
     versionName, prevVersion = fomautomator_helpers.getVersions(FUNC_DIR)
     updateModule = "fomfunctions_update"
-    #versionName, prevVersion, updateModule = '201307180', '', None
     sys.path.insert(1, os.path.join(FUNC_DIR,versionName))
     progModule = "fomfunctions"
     exptypes = []
