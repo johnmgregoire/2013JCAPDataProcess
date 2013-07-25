@@ -37,7 +37,7 @@ class FOMAutomator(object):
         self.version = versionName
         self.lastVersion = prevVersion
         # the os.path.insert in either the gui or in the terminal argument
-        # reigion is what makes sure we select the right function Module
+        # region is what makes sure we select the right function Module
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
         self.updatemod = updateModule
@@ -116,7 +116,6 @@ class FOMAutomator(object):
         else:
             funcs_names = [func[0] for func in params_full for num in range(len(func[1]))]
             params_and_answers = [[pname,pval] for func in params_full for (pname,ptype,pval) in func[1]]
-
             return funcs_names, params_and_answers
 
     """ changes the parameter value in the function dictionary """
@@ -151,6 +150,7 @@ class FOMAutomator(object):
         
         processPool.map(makeFileRunner, jobs)
         eTime = time.time()
+        timeStamp = time.strftime('%Y%m%d%H%M%S',time.gmtime())
 
         root = logging.getLogger()
         root.setLevel(logging.INFO)
@@ -167,20 +167,18 @@ class FOMAutomator(object):
     
         fileLogger.stop()
         fileHandler.close()
-        """try:
-            if numberOfErrors > self.errorNum:
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".error"))
-            else:
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".done"))
-        except:
-            if numberOfErrors > self.errorNum:
-                pass
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".error"))
-            else:
-                pass
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".done"))
-        """
 
+        if fileLogger.errorCount > self.errorNum:
+            try:
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".error"))
+            except:
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".error"))
+        else:
+            try:
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".done"))
+            except:
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".done"))
+                
     """ runs the files in order on a single process and logs errors """
     def runSequentially(self):
         # setting up everything needed for logging the errors
