@@ -103,7 +103,6 @@ class FileRunner(object):
                                             in funcToRun.func_code.co_varnames[fdict['numdictargs']:funcToRun.func_code.co_argcount]])))
                 # since figures of merit must be scalar, save lists of
                 #   segmented figures of merit separately
-                print fname, fom
                 if isinstance(fom, list):
                     for seg, val in enumerate(fom):
                         self.FOMs[('_').join(map(str, varset))
