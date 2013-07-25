@@ -176,7 +176,7 @@ class FOMAutomator(object):
         # if we have the type of experiment, we can just get the specific functions
         if self.expTypes:         
             for tech in self.expTypes:
-                techDict = self.funcMod.validFuncs.get(tech)
+                techDict = self.funcMod.EXPERIMENT_FUNCTIONS.get(tech)
                 if techDict:
                     [self.allFuncs.append(func) for func in techDict
                      if func not in self.allFuncs]
@@ -189,10 +189,15 @@ class FOMAutomator(object):
             funcObj = [f[1] for f in getmembers(self.funcMod, isfunction) if
                        f[0] == fname][0]
             funcdict = {'batchvars': [], 'params': []}
-            dictargs = funcObj.func_code.co_argcount - len(funcObj.func_defaults)
-            funcdict['numdictargs'] = dictargs
-            arglist = zip(funcObj.func_code.co_varnames[dictargs:],
-                          funcObj.func_defaults) 
+            try:
+                dictargs = funcObj.func_code.co_argcount - len(funcObj.func_defaults)
+                funcdict['numdictargs'] = dictargs
+                arglist = zip(funcObj.func_code.co_varnames[dictargs:],
+                              funcObj.func_defaults)
+            except TypeError: # if there are no keyword arguments
+                dictargs = funcObj.func_code.co_argcount
+                funcdict['numdictargs'] = dictargs
+                arglist = []
 
             # note: we're assuming any string argument to the functions that the user wrote is data
             # for example t = 't(s)' in the function would mean t is equal to the raw data column t(s)

@@ -36,7 +36,10 @@ class FileRunner(object):
             #oldversion = path_helpers.getVersionFromPath(pckpath)
             #self.FOMs, self.interData, self.params = pickle.load(pckpath)
             if lastversion == oldversion:
-                funcMod = __import__(updatemod)
+                try:
+                    funcMod = __import__(updatemod)
+                except ImportError:
+                    funcMod = __import__(modname)
             else:
                 self.FOMs, self.interData, self.params = {}, {}, {}
                 funcMod = __import__(modname)
@@ -63,41 +66,50 @@ class FileRunner(object):
         # skip this file if it has fewer than 100 lines of data
         if self.rawDataLength < 100:
             return
-        allFuncs = [f[1] for f in inspect.getmembers(funcMod, inspect.isfunction)]
+        # getmembers returns functions in alphabetical order.  We sort these
+        #   functions by the line at which they start in the source code so
+        #   that they can be run in the correct order.
+        allFuncs = [ftup[1] for ftup in sorted(inspect.getmembers(
+            funcMod,inspect.isfunction), key=lambda f: inspect.getsourcelines(f[1])[1])]
         validDictArgs = [self.rawData, self.interData]
         expType = self.rawData.get('BLTechniqueName')
-        #print 'expType:', expType
-        targetFOMs = funcMod.validFuncs.get(expType)
+        targetFOMs = funcMod.EXPERIMENT_FUNCTIONS.get(expType)
         if not targetFOMs:
             #print self.txtfile
             return
         fomFuncs = [func for func in allFuncs if func.func_name in targetFOMs]
+        #print expType,allFuncs
         for funcToRun in fomFuncs:
             fname = funcToRun.func_name
             fdict = self.fdicts[fname]
             fdictargs = validDictArgs[:fdict['numdictargs']]
-            allvarsets = [fdict.get('~'+batch) for batch in fdict.get('batchvars')]
-            commonvars = lambda vartup, varlist: [var for var in varlist if
-                                                  var in vartup]
-            # requires list of lists - I'm not sure if I like this (it's silly for functions
-            #   with one batch variable)
-            for varset in [commonvars(vartup, varlist) for vartup in
-                           itertools.product(*allvarsets) for varlist in
-                           targetFOMs[fname]]:
-                # this is to make up for the fact that commonvars returns empty lists and
-                #   single-argument lists for two or more batch variables
-                if len(varset) == len(fdict.get('batchvars')):
-                    fom = funcToRun(**dict(zip(funcToRun.func_code.co_varnames[:funcToRun.func_code.co_argcount],
-                                                fdictargs+[self.accessDict(fname, varset, argname) for argname
-                                                in funcToRun.func_code.co_varnames[fdict['numdictargs']:funcToRun.func_code.co_argcount]])))
-                    # since figures of merit must be scalar, save lists of
-                    #   segmented figures of merit separately
-                    if isinstance(fom, list):
-                        for seg, val in enumerate(fom):
-                            self.FOMs[('_').join(map(str, varset))
-                                      +'_'+fname+'_'+str(seg)] = val
-                    else:
-                        self.FOMs[('_').join(map(str, varset))+'_'+fname] = fom
+##            allvarsets = [fdict.get('~'+batch) for batch in fdict.get('batchvars')]
+##            commonvars = lambda vartup, varlist: [var for var in varlist if
+##                                                  var in vartup]
+##            # requires list of lists - I'm not sure if I like this (it's silly for functions
+##            #   with one batch variable)
+##            for varset in [commonvars(vartup, varlist) for vartup in
+##                           itertools.product(*allvarsets) for varlist in
+##                           targetFOMs[fname]]:
+##                # this is to make up for the fact that commonvars returns empty lists and
+##                #   single-argument lists for two or more batch variables
+##                if len(varset) == len(fdict.get('batchvars')):
+            varsetList = targetFOMs[fname]
+            if not varsetList:
+                varsetList = [[]]
+            for varset in varsetList:
+                fom = funcToRun(**dict(zip(funcToRun.func_code.co_varnames[:funcToRun.func_code.co_argcount],
+                                            fdictargs+[self.accessDict(fname, varset, argname) for argname
+                                            in funcToRun.func_code.co_varnames[fdict['numdictargs']:funcToRun.func_code.co_argcount]])))
+                # since figures of merit must be scalar, save lists of
+                #   segmented figures of merit separately
+                print fname, fom
+                if isinstance(fom, list):
+                    for seg, val in enumerate(fom):
+                        self.FOMs[('_').join(map(str, varset))
+                                  +'_'+fname+'_'+str(seg)] = val
+                else:
+                    self.FOMs[('_').join(map(str, varset))+'_'+fname] = fom
         # need to save all dictionaries in pickle file, then remove certain
         #   intermediates, then save JSON and XML files
         # TEMPORARY:
