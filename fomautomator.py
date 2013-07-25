@@ -1,6 +1,6 @@
 # Allison Schubauer and Daisy Hernandez
 # Created: 6/26/2013
-# Last Updated: 7/24/2013
+# Last Updated: 7/25/2013
 # For JCAP
 
 """
@@ -25,6 +25,7 @@ import filerunner
 import time
 import datetime
 
+# the directory were the versions of the fomfunctions are
 FUNC_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisFunctions"))
 XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML"))
 
@@ -36,19 +37,22 @@ class FOMAutomator(object):
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
-        # the os.path.insert in either the gui or in the terminal argument
-        # region is what makes sure we select the right function Module
+        # the os.path.insert in the gui or in main is what makes 
+        # we select the correct function module
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
         self.updatemod = updateModule
         self.expTypes = expTypes
         self.outDir = outDir
         self.rawDataDir = rawDataDir
+        # the max number of errors allowed by the user
         self.errorNum = errorNum
         self.jobname = jobname
         self.files = []
 
         # setting up everything having to do with saving the XML files
+        # self.files are tuples of filepath and its xml output in
+        # the outDir (if such exists)
         for rdpath in rawDataFiles:
             xmlpath = path_helpers.giveAltPathAndExt(outDir,rdpath,'.xml')
             if xmlpath in xmlFiles:
@@ -69,11 +73,11 @@ class FOMAutomator(object):
                 if techDict:
                     [self.allFuncs.append(func) for func in techDict
                      if func not in self.allFuncs]
-
         # if not we just get them all                     
         else:
             self.allFuncs = [f[0] for f in getmembers(self.funcMod, isfunction)]
-                        
+
+        # now that we have all the functions, we get all the parameters
         for fname in self.allFuncs:
             funcObj = [f[1] for f in getmembers(self.funcMod, isfunction) if
                        f[0] == fname][0]
@@ -103,8 +107,9 @@ class FOMAutomator(object):
             self.funcDicts[fname] = funcdict
         return self.funcDicts
 
-    """ returns a list of the parameters if the default is false, else it returns
-    the functions and values that can be passed to setParams """
+    """ if default is false, it returns a set of parameters with functions.
+    if true, it returns the functions along with the parameters and their
+    default values. the latter can be passed directly to setParams """
     def requestParams(self,default=True):
         funcNames = (self.processFuncs().keys())
         funcNames.sort()
@@ -128,8 +133,11 @@ class FOMAutomator(object):
 
     """ starts running the jobs in parrallel and initilizes logging """
     def runParallel(self):
+        # the path to which to log to - will change depending on the
+        # way processing ends or if there was another statusFile with the same
+        # name when it renames
         statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
-        
+
         # setting up the manager and things required to log due to multiprocessing
         pmanager = Manager()
         loggingQueue = pmanager.Queue()
@@ -258,7 +266,7 @@ def makeFileRunner(args):
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-I','--inputfolder', type=str, help="The input folder", nargs=1, required=True)
+    parser.add_argument('-I','--inputfolder', type=str, help="The input folder", nargs=1)
     parser.add_argument('-i', '--inputfile',  type=str, help="The input file",  nargs=1)
     parser.add_argument('-f', '--fileofinputs', type=str, help="File containing input files", nargs=1)
     parser.add_argument('-J','--jobname', type=str, help="The job_name", nargs=1)
@@ -307,8 +315,8 @@ def main(argv):
     xmlFiles = path_helpers.getFolderFiles(outputDir,'.xml')
     versionName, prevVersion = fomautomator_helpers.getVersions(FUNC_DIR)
     updateModule = "fomfunctions_update"
-    sys.path.insert(1, os.path.join(FUNC_DIR,versionName))
     progModule = "fomfunctions"
+    sys.path.insert(1, os.path.join(FUNC_DIR,versionName))
     exptypes = []
     xmlPath = XML_DIR
     rawPath = RAW_DATA_PATH
