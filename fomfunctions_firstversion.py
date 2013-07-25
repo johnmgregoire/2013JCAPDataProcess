@@ -44,22 +44,22 @@ def TafelSlopeVPerDec(rawd, interd, var='I(A)', vshift=-(.187-0.045), boolDevFra
                       dyDevFrac=0.2, dyDevNOut=5, dyDevAbs = 0.,
                       dx=1., maxFracOutliers=0.5, critSegVRange=0.04, critSegIEnd=3.e-5,
                       critSegVEnd=0.36, SavGolPts=10):
-    # initialize the arrays to hold tafel values (considered both
+    # initialize the arrays to hold Tafel values (considered both
     #   intermediate data and figures of merit)
-    interd['tafel_slopeVperdec'] = []
-    interd['tafel_estart'] = []
-    interd['tafel_fitVrange'] = []
-    interd['tafel_logExCurrent'] = []
+    interd['Tafel_slopeVperdec'] = []
+    interd['Tafel_estart'] = []
+    interd['Tafel_fitVrange'] = []
+    interd['Tafel_logExCurrent'] = []
     booldn_segstart = 3 * boolDevNOut
     dn_segstart = 3 * dyDevNOut
     inter.calcsegind(rawd, interd, SGpts=SavGolPts) # breaks experiment into segments
     inter.calccurvregions(rawd, interd, SGpts=SavGolPts) # runs on all segments
     linsub =  inter.calcLinSub(rawd, interd, var=var) # returns 1 if successful, 0 if not
     if not linsub:
-        interd['tafel_slopeVperdec'] = float('nan')
-        interd['tafel_estart'] = float('nan')
-        interd['tafel_fitVrange'] = float('nan')
-        interd['tafel_logExCurrent'] = float('nan')
+        interd['Tafel_slopeVperdec'] = float('nan')
+        interd['Tafel_estart'] = float('nan')
+        interd['Tafel_fitVrange'] = float('nan')
+        interd['Tafel_logExCurrent'] = float('nan')
         return float('nan')
     inter.SegSG(rawd, interd, SGpts=SGpts, order=1, k=var+'_LinSub')
     for seg in range(len(interd['segprops_dlist'])):
@@ -73,10 +73,10 @@ def TafelSlopeVPerDec(rawd, interd, var='I(A)', vshift=-(.187-0.045), boolDevFra
             dx=dx, maxfracoutliers=maxFracOutliers)
         if len(istart_segs)==0:
             # no Tafel segments
-            interd['tafel_slopeVperdec'].append(float('nan'))
-            interd['tafel_estart'].append(float('nan'))
-            interd['tafel_fitVrange'].append(float('nan'))
-            interd['tafel_logExCurrent'].append(float('nan'))
+            interd['Tafel_slopeVperdec'].append(float('nan'))
+            interd['Tafel_estart'].append(float('nan'))
+            interd['Tafel_fitVrange'].append(float('nan'))
+            interd['Tafel_logExCurrent'].append(float('nan'))
             continue
         ind=numpy.argmax(len_segs)
         i0=istart_segs[ind]
@@ -91,17 +91,17 @@ def TafelSlopeVPerDec(rawd, interd, var='I(A)', vshift=-(.187-0.045), boolDevFra
             istart_segs, len_segs, fitdy_segs, fitinterc_segs, dy=inter.findlinearsegs(
                 il, dyDevFrac, dyDevNOut, dn_segstart, dydev_abs=dyDevAbs, dx=dx, critdy_fracmaxdy=None)
         except:
-            interd['tafel_slopeVperdec'].append(float('nan'))
-            interd['tafel_estart'].append(float('nan'))
-            interd['tafel_fitVrange'].append(float('nan'))
-            interd['tafel_logExCurrent'].append(float('nan'))
+            interd['Tafel_slopeVperdec'].append(float('nan'))
+            interd['Tafel_estart'].append(float('nan'))
+            interd['Tafel_fitVrange'].append(float('nan'))
+            interd['Tafel_logExCurrent'].append(float('nan'))
             continue
         if len(istart_segs)==0:
             # no Tafel segments
-            interd['tafel_slopeVperdec'].append(float('nan'))
-            interd['tafel_estart'].append(float('nan'))
-            interd['tafel_fitVrange'].append(float('nan'))
-            interd['tafel_logExCurrent'].append(float('nan'))
+            interd['Tafel_slopeVperdec'].append(float('nan'))
+            interd['Tafel_estart'].append(float('nan'))
+            interd['Tafel_fitVrange'].append(float('nan'))
+            interd['Tafel_logExCurrent'].append(float('nan'))
             continue
         #only take those segments covering a certain V range and with a min current for the top 10th of the V range
         #   in the segment and positive slope for there on out and then take the steepest one.
@@ -124,10 +124,10 @@ def TafelSlopeVPerDec(rawd, interd, var='I(A)', vshift=-(.187-0.045), boolDevFra
                 ind=count2
         if ind is None:
             # no Tafel segments
-            interd['tafel_slopeVperdec'].append(float('nan'))
-            interd['tafel_estart'].append(float('nan'))
-            interd['tafel_fitVrange'].append(float('nan'))
-            interd['tafel_logExCurrent'].append(float('nan'))
+            interd['Tafel_slopeVperdec'].append(float('nan'))
+            interd['Tafel_estart'].append(float('nan'))
+            interd['Tafel_fitVrange'].append(float('nan'))
+            interd['Tafel_logExCurrent'].append(float('nan'))
             continue
         
         i0=istart_segs[ind]
@@ -137,24 +137,24 @@ def TafelSlopeVPerDec(rawd, interd, var='I(A)', vshift=-(.187-0.045), boolDevFra
         vt=v[tafinds]
         fitdy, fitint=numpy.polyfit(vt, it, 1)
 
-        interd['tafel_slopeVperdec'].append(1./fitdy)
-        interd['tafel_estart'].append(v[0])
-        interd['tafel_fitVrange'].append(vt.max()-vt.min())
-        interd['tafel_logExCurrent'].append(fitint)
+        interd['Tafel_slopeVperdec'].append(1./fitdy)
+        interd['Tafel_estart'].append(v[0])
+        interd['Tafel_fitVrange'].append(vt.max()-vt.min())
+        interd['Tafel_logExCurrent'].append(fitint)
 
         interd['segprops_dlist'][seg]['TafelInds']=inds[taffitinds][tafinds]
         
     #FOMs (the entire list):
-    return interd['tafel_slopeVperdec']
+    return interd['Tafel_slopeVperdec']
 
 def TafelEstart_TafelValue(rawd, interd):
-    return interd['tafel_estart']
+    return interd['Tafel_estart']
 
 def TafelFitVRange(rawd, interd):
-    return interd['tafel_fitVrange']
+    return interd['Tafel_fitVrange']
 
 def TafelLogExCurrent(rawd, interd):
-    return interd['tafel_logExCurrent']
+    return interd['Tafel_logExCurrent']
     
 
 def ArrSS(rawd, interd, x=['Ewe(V)', 'I(A)', 'I(A)_LinSub'],

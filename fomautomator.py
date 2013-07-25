@@ -55,7 +55,7 @@ class FOMAutomator(object):
             else:
                 self.files.append((rdpath, ''))
 
-    """ starts running the jobs in parrallel and initilizes logging """
+    """ starts running the jobs in parallel and initializes logging """
     def runParallel(self):
         statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
         

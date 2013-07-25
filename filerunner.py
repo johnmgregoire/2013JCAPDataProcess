@@ -12,9 +12,6 @@ import cPickle as pickle
 import inspect
 import itertools
 
-JSON_PATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisJSON")
-INTERMED_PCK_PATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisIntermed")
-
 class FileRunner(object):
 
     """ initializes a FileRunner which only processes the data of one file"""
@@ -26,24 +23,36 @@ class FileRunner(object):
         self.outDir = outDir
         self.rawDataDir = rawDataDir
         self.fdicts = funcdicts
-        # this is probably temporary
-        oldversion = None
-        self.FOMs, self.interData, self.params = {}, {}, {}
-        # if we have a previous version of the module along with a path to the xml file, we check if
-        # it is possible to use the update module
-        if lastversion and xmlpath:
-            oldversion, self.FOMs, self.interData, self.params = xmltranslator.getDataFromXML(xmlpath)
-            #oldversion = path_helpers.getVersionFromPath(pckpath)
-            #self.FOMs, self.interData, self.params = pickle.load(pckpath)
-            if lastversion == oldversion:
-                try:
-                    funcMod = __import__(updatemod)
-                except ImportError:
-                    funcMod = __import__(modname)
-            else:
-                self.FOMs, self.interData, self.params = {}, {}, {}
-                funcMod = __import__(modname)
-        else:
+        updating = False
+        pckpath = None
+##        self.FOMs, self.interData, self.params = {}, {}, {}
+##        # if we have a previous version of the module along with a path to the xml file, we check if
+##        # it is possible to use the update module
+##        if lastversion and xmlpath:
+##            oldversion, self.FOMs, self.interData, self.params = xmltranslator.getDataFromXML(xmlpath)
+##            #oldversion = path_helpers.getVersionFromPath(pckpath)
+##            #self.FOMs, self.interData, self.params = pickle.load(pckpath)
+##            if lastversion == oldversion:
+##                try:
+##                    funcMod = __import__(updatemod)
+##                except ImportError:
+##                    funcMod = __import__(modname)
+##            else:
+##                self.FOMs, self.interData, self.params = {}, {}, {}
+##                funcMod = __import__(modname)
+##        else:
+##            funcMod = __import__(modname)
+        if lastversion:
+            try:
+               pckpath = os.path.join(outDir, self.expfilename+'_'+
+                                      lastversion+'.pck')
+               self.FOMs, self.interData, self.params = pickle.load(pckpath)
+               funcMod = __import__(updatemod)
+               updating = True
+            except:
+               pass
+        if not updating:
+            self.FOMs, self.interData, self.params = {}, {}, {}
             funcMod = __import__(modname)
         for param in newparams:
             self.params[param] = newparams[param]
@@ -83,17 +92,6 @@ class FileRunner(object):
             fname = funcToRun.func_name
             fdict = self.fdicts[fname]
             fdictargs = validDictArgs[:fdict['numdictargs']]
-##            allvarsets = [fdict.get('~'+batch) for batch in fdict.get('batchvars')]
-##            commonvars = lambda vartup, varlist: [var for var in varlist if
-##                                                  var in vartup]
-##            # requires list of lists - I'm not sure if I like this (it's silly for functions
-##            #   with one batch variable)
-##            for varset in [commonvars(vartup, varlist) for vartup in
-##                           itertools.product(*allvarsets) for varlist in
-##                           targetFOMs[fname]]:
-##                # this is to make up for the fact that commonvars returns empty lists and
-##                #   single-argument lists for two or more batch variables
-##                if len(varset) == len(fdict.get('batchvars')):
             varsetList = targetFOMs[fname]
             if not varsetList:
                 varsetList = [[]]
@@ -106,21 +104,16 @@ class FileRunner(object):
                 print fname, fom
                 if isinstance(fom, list):
                     for seg, val in enumerate(fom):
-                        self.FOMs[('_').join(map(str, varset))
-                                  +'_'+fname+'_'+str(seg)] = val
+                        self.FOMs[('_').join(map(str, varset)
+                                             +[fname, str(seg)])] = val
                 else:
-                    self.FOMs[('_').join(map(str, varset))+'_'+fname] = fom
+                    self.FOMs[('_').join(map(str, varset)+[fname])] = fom
         # need to save all dictionaries in pickle file, then remove certain
         #   intermediates, then save JSON and XML files
-        # TEMPORARY:
-        lastDataFile = ''
-        if oldversion:
-            lastDataFile = os.path.join(INTERMED_PCK_PATH,
-                                        self.expfilename+'_'+oldversion+'.pck')
-        #self.savePck(INTERMED_PCK_PATH, lastDataFile)
+        self.savePck(pckpath)
         # remove intermediates that aren't same length as raw data
         self.stripData()
-        self.saveJSON(JSON_PATH)
+        self.saveJSON()
         self.saveXML()
         return
 
@@ -138,10 +131,7 @@ class FileRunner(object):
                 # raw/intermediate data value
                 return fdict[argname]
             else:
-                # this error will need to be handled somehow, and this
-                #   is something that should definitely be tested in
-                #   the committer
-                print argname, "is not a valid argument"
+                raise ValueError("%s is not a valid function argument." %argname)
 
     def stripData(self):
         for ikey, ival in self.interData.items():
@@ -150,16 +140,18 @@ class FileRunner(object):
                 if len(ival) != self.rawDataLength:
                     self.interData.pop(ikey, None)
 
-    def savePck(self, directory, oldfilename):
+    def savePck(self, oldfilepath):
         # remove old version of intermediate data for this file
-        if oldfilename:
-            os.path.remove(oldfilename)
-        savepath = os.path.join(directory, self.expfilename+'_'+self.version+'.pck')
+        try:
+            os.path.remove(oldfilepath)
+        except:
+            pass
+        savepath = os.path.join(self.outDir, self.expfilename+'_'+self.version+'.pck')
         with open(savepath, 'w') as pckfile:
             pickle.dump((self.FOMs, self.interData, self.params), pckfile)
 
-    def saveJSON(self, directory):
-        savepath = os.path.join(directory, self.expfilename+'.json')
+    def saveJSON(self):
+        savepath = os.path.join(self.outDir, self.expfilename+'.json')
         dataTup = (self.FOMs, self.interData, self.params)
         jsontranslator.toJSON(savepath, self.version, dataTup)
 
