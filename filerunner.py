@@ -15,7 +15,7 @@ import itertools
 class FileRunner(object):
 
     """ initializes a FileRunner which only processes the data of one file"""
-    def __init__(self, queue, expfile, xmlpath, version, lastversion, modname,
+    def __init__(self, queue, expfile, version, lastversion, modname,
                  updatemod, newparams, funcdicts, outDir, rawDataDir):
         self.txtfile = expfile
         self.expfilename = os.path.splitext(os.path.split(self.txtfile)[1])[0]
@@ -101,6 +101,7 @@ class FileRunner(object):
                                             in funcToRun.func_code.co_varnames[fdict['numdictargs']:funcToRun.func_code.co_argcount]])))
                 # since figures of merit must be scalar, save lists of
                 #   segmented figures of merit separately
+                print fname, fom
                 if isinstance(fom, list):
                     for seg, val in enumerate(fom):
                         self.FOMs[('_').join(map(str, varset)

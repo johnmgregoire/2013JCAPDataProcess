@@ -160,7 +160,7 @@ class echemvisDialog(QtGui.QMainWindow):
             if self.progModule:
                 errorNum = 0
                 jobName = "TestJobNameMenu"
-                self.automator = fomautomator.FOMAutomator(self.paths, xmlFiles,
+                self.automator = fomautomator.FOMAutomator(self.paths,
                                                            self.versionName,
                                                            self.prevVersion,
                                                            self.progModule,

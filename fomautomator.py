@@ -32,7 +32,7 @@ XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnal
 class FOMAutomator(object):
     
     """ initializes the automator with all necessary information """
-    def __init__(self, rawDataFiles, xmlFiles, versionName, prevVersion,funcModule,
+    def __init__(self, rawDataFiles, versionName, prevVersion,funcModule,
                  updateModule, expTypes, outDir, rawDataDir,errorNum,jobname):
         # initializing all the basic info
         self.version = versionName
@@ -48,17 +48,17 @@ class FOMAutomator(object):
         # the max number of errors allowed by the user
         self.errorNum = errorNum
         self.jobname = jobname
-        self.files = []
+        self.files = rawDataFiles
 
-        # setting up everything having to do with saving the XML files
-        # self.files are tuples of filepath and its xml output in
-        # the outDir (if such exists)
-        for rdpath in rawDataFiles:
-            xmlpath = path_helpers.giveAltPathAndExt(outDir,rdpath,'.xml')
-            if xmlpath in xmlFiles:
-                self.files.append((rdpath, xmlpath))
-            else:
-                self.files.append((rdpath, ''))
+##        # setting up everything having to do with saving the XML files
+##        # self.files are tuples of filepath and its xml output in
+##        # the outDir (if such exists)
+##        for rdpath in rawDataFiles:
+##            xmlpath = path_helpers.giveAltPathAndExt(outDir,rdpath,'.xml')
+##            if xmlpath in xmlFiles:
+##                self.files.append((rdpath, xmlpath))
+##            else:
+##                self.files.append((rdpath, ''))
 
     """ returns a dicitonary with all the parameters and batch variables in """
     def processFuncs(self):
@@ -151,10 +151,10 @@ class FOMAutomator(object):
         bTime = time.time()
         
         # the jobs to process each of the files
-        jobs = [(loggingQueue, filename, xmlpath, self.version,
+        jobs = [(loggingQueue, filename, self.version,
                  self.lastVersion, self.modname, self.updatemod,
                  self.params, self.funcDicts, self.outDir, self.rawDataDir)
-                for (filename, xmlpath) in self.files]
+                for filename in self.files]
         
         processPool.map(makeFileRunner, jobs)
         eTime = time.time()
@@ -204,12 +204,12 @@ class FOMAutomator(object):
         
         # The file processing occurs here
         logQueue = None
-        for i, (filename, xmlpath) in enumerate(self.files):
+        for i, filename in enumerate(self.files):
             if numberOfErrors > self.errorNum:
                 root.info("The job encountered %d errors and the max number of them allowed is %d" %(numberOfErrors,self.errorNum))
                 break
             try:
-                exitcode = filerunner.FileRunner(logQueue,filename,xmlpath, self.version,
+                exitcode = filerunner.FileRunner(logQueue,filename, self.version,
                                                  self.lastVersion, self.modname, self.updatemod,
                                                  self.params, self.funcDicts,self.outDir,
                                                  self.rawDataDir)
@@ -312,7 +312,6 @@ def main(argv):
         parallel = args.parallel
 
 
-    xmlFiles = path_helpers.getFolderFiles(outputDir,'.xml')
     versionName, prevVersion = fomautomator_helpers.getVersions(FUNC_DIR)
     updateModule = "fomfunctions_update"
     progModule = "fomfunctions"
@@ -322,7 +321,7 @@ def main(argv):
     rawPath = RAW_DATA_PATH
 
     if paths:
-        automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,updateModule,exptypes, xmlPath,rawPath,max_errors,jobname)
+        automator = FOMAutomator(paths, versionName,prevVersion,progModule,updateModule,exptypes, xmlPath,rawPath,max_errors,jobname)
         funcNames, paramsList = automator.requestParams(default=True)
         automator.setParams(funcNames, paramsList)
         
