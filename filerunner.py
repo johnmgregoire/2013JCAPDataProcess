@@ -25,28 +25,12 @@ class FileRunner(object):
         self.fdicts = funcdicts
         updating = False
         pckpath = None
-##        self.FOMs, self.interData, self.params = {}, {}, {}
-##        # if we have a previous version of the module along with a path to the xml file, we check if
-##        # it is possible to use the update module
-##        if lastversion and xmlpath:
-##            oldversion, self.FOMs, self.interData, self.params = xmltranslator.getDataFromXML(xmlpath)
-##            #oldversion = path_helpers.getVersionFromPath(pckpath)
-##            #self.FOMs, self.interData, self.params = pickle.load(pckpath)
-##            if lastversion == oldversion:
-##                try:
-##                    funcMod = __import__(updatemod)
-##                except ImportError:
-##                    funcMod = __import__(modname)
-##            else:
-##                self.FOMs, self.interData, self.params = {}, {}, {}
-##                funcMod = __import__(modname)
-##        else:
-##            funcMod = __import__(modname)
         if lastversion:
             try:
                pckpath = os.path.join(outDir, self.expfilename+'_'+
                                       lastversion+'.pck')
-               self.FOMs, self.interData, self.params = pickle.load(pckpath)
+               with open(pckpath, 'r') as pckfile:
+                   self.FOMs, self.interData, self.params = pickle.load(pckfile)
                funcMod = __import__(updatemod)
                updating = True
             except:
@@ -74,7 +58,7 @@ class FileRunner(object):
             raise ValueError("Not a valid raw data file (check .txt or .pck file).")
         # skip this file if it has fewer than 100 lines of data
         if self.rawDataLength < 100:
-            return
+            return 0
         # getmembers returns functions in alphabetical order.  We sort these
         #   functions by the line at which they start in the source code so
         #   that they can be run in the correct order.
@@ -82,12 +66,14 @@ class FileRunner(object):
             funcMod,inspect.isfunction), key=lambda f: inspect.getsourcelines(f[1])[1])]
         validDictArgs = [self.rawData, self.interData]
         expType = self.rawData.get('BLTechniqueName')
-        targetFOMs = funcMod.EXPERIMENT_FUNCTIONS.get(expType)
+        try:
+            targetFOMs = funcMod.EXPERIMENT_FUNCTIONS[expType]
+        except KeyError:
+            raise KeyError("Unrecognized experiment type: %s." %expType)
         if not targetFOMs:
-            #print self.txtfile
-            return
+            # nothing else to do for this file
+            return 1
         fomFuncs = [func for func in allFuncs if func.func_name in targetFOMs]
-        #print expType,allFuncs
         for funcToRun in fomFuncs:
             fname = funcToRun.func_name
             fdict = self.fdicts[fname]
@@ -101,21 +87,20 @@ class FileRunner(object):
                                             in funcToRun.func_code.co_varnames[fdict['numdictargs']:funcToRun.func_code.co_argcount]])))
                 # since figures of merit must be scalar, save lists of
                 #   segmented figures of merit separately
-                print fname, fom
                 if isinstance(fom, list):
                     for seg, val in enumerate(fom):
                         self.FOMs[('_').join(map(str, varset)
                                              +[fname, str(seg)])] = val
                 else:
                     self.FOMs[('_').join(map(str, varset)+[fname])] = fom
-        # need to save all dictionaries in pickle file, then remove certain
+        # save all dictionaries in pickle file, then remove certain
         #   intermediates, then save JSON and XML files
         self.savePck(pckpath)
         # remove intermediates that aren't same length as raw data
         self.stripData()
         self.saveJSON()
         self.saveXML()
-        return
+        return 1
 
     def accessDict(self, fname, varset, argname):
         fdict = self.fdicts.get(fname)
@@ -143,7 +128,7 @@ class FileRunner(object):
     def savePck(self, oldfilepath):
         # remove old version of intermediate data for this file
         try:
-            os.path.remove(oldfilepath)
+            os.remove(oldfilepath)
         except:
             pass
         savepath = os.path.join(self.outDir, self.expfilename+'_'+self.version+'.pck')

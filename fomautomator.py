@@ -25,7 +25,7 @@ import filerunner
 import time
 import datetime
 
-# the directory were the versions of the fomfunctions are
+# the directory where the versions of the fomfunctions are
 FUNC_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisFunctions"))
 XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML"))
 
@@ -49,16 +49,6 @@ class FOMAutomator(object):
         self.errorNum = errorNum
         self.jobname = jobname
         self.files = rawDataFiles
-
-##        # setting up everything having to do with saving the XML files
-##        # self.files are tuples of filepath and its xml output in
-##        # the outDir (if such exists)
-##        for rdpath in rawDataFiles:
-##            xmlpath = path_helpers.giveAltPathAndExt(outDir,rdpath,'.xml')
-##            if xmlpath in xmlFiles:
-##                self.files.append((rdpath, xmlpath))
-##            else:
-##                self.files.append((rdpath, ''))
 
     """ returns a dicitonary with all the parameters and batch variables in """
     def processFuncs(self):
@@ -133,7 +123,7 @@ class FOMAutomator(object):
 
     """ starts running the jobs in parallel and initializes logging """
     def runParallel(self):
-        # the path to which to log to - will change depending on the
+        # the path to which to log - will change depending on the
         # way processing ends or if there was another statusFile with the same
         # name when it renames
         statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
@@ -209,11 +199,13 @@ class FOMAutomator(object):
                 root.info("The job encountered %d errors and the max number of them allowed is %d" %(numberOfErrors,self.errorNum))
                 break
             try:
+                # returns 1 if file was processed and 0 if file was skipped
                 exitcode = filerunner.FileRunner(logQueue,filename, self.version,
                                                  self.lastVersion, self.modname, self.updatemod,
                                                  self.params, self.funcDicts,self.outDir,
                                                  self.rawDataDir)
-                root.info('File %s completed  %d/%d' %(os.path.basename(filename),i+1,numberOfFiles))
+                if exitcode:
+                    root.info('File %s completed  %d/%d' %(os.path.basename(filename),i+1,numberOfFiles))
             except Exception as someException:
                 # root.exception will log an ERROR with printed traceback;
                 # root.error will log an ERROR without traceback
@@ -251,8 +243,11 @@ def makeFileRunner(args):
     processHandler = QueueHandler(queue)
     root.addHandler(processHandler)
     try:
+        # returns 1 if file was processed or 0 if file was too short
         exitcode = filerunner.FileRunner(*args)
-        root.info('File %s completed' %filename)
+        # if file was processed, write logging message
+        if exitcode:
+            root.info('File %s completed' %filename)
     except Exception as someException:
         # root.exception will log an ERROR with printed traceback;
         # root.error will log an ERROR without traceback
