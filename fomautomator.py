@@ -1,6 +1,6 @@
 # Allison Schubauer and Daisy Hernandez
 # Created: 6/26/2013
-# Last Updated: 7/17/2013
+# Last Updated: 7/23/2013
 # For JCAP
 
 """
@@ -15,7 +15,6 @@ from multiprocessing import Process, Pool, Manager
 from inspect import *
 from rawdataparser import RAW_DATA_PATH
 from qhtest import * # this also imports queue 
-import Queue
 import jsontranslator
 import xmltranslator
 import importlib
@@ -36,6 +35,8 @@ class FOMAutomator(object):
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
+        # the os.path.insert in either the gui or in the terminal argument
+        # reigion is what makes sure we select the right function Module
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
         self.updatemod = updateModule
@@ -43,7 +44,7 @@ class FOMAutomator(object):
         self.outDir = outDir
         self.rawDataDir = rawDataDir
         self.errorNum = errorNum
-        self.jobname=jobname
+        self.jobname = jobname
         self.files = []
 
         # setting up everything having to do with saving the XML files
@@ -56,17 +57,16 @@ class FOMAutomator(object):
 
     """ starts running the jobs in parrallel and initilizes logging """
     def runParallel(self):
+        statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
+        
         # setting up the manager and things required to log due to multiprocessing
         pmanager = Manager()
         loggingQueue = pmanager.Queue()
         processPool = Pool()
-        statusHandler = logging.FileHandler('test.log')
-        errorHandler = logging.FileHandler('testerror.log')
+        fileHandler = logging.FileHandler(statusFileName)
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        statusHandler.setFormatter(logFormat)
-        errorHandler.setFormatter(logFormat)
-        errorHandler.addFilter(ErrorFilter())
-        fileLogger = QueueListener(loggingQueue, statusHandler, errorHandler)
+        fileHandler.setFormatter(logFormat)
+        fileLogger = QueueListener(loggingQueue, fileHandler)
         fileLogger.start()
         
         # the jobs to process each of the files
@@ -75,63 +75,92 @@ class FOMAutomator(object):
                  self.params, self.funcDicts, self.outDir, self.rawDataDir)
                 for (filename, xmlpath) in self.files]
         processPool.map(makeFileRunner, jobs)
-        processPool.close()
-        processPool.join()
-        fileLogger.stop()
-        statusHandler.close()
-        errorHandler.close()
-
-    """ runs the files in order on a single process and logs errors """
-    def runSequentially(self):
-        # setting up everything needed for the loggers
-        loggingQueue = Queue.Queue()
-        statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
-        fileHandler = logging.FileHandler(statusFileName)
-        logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        fileLogger = QueueListener(loggingQueue, fileHandler)
-        fileLogger.start()
+        print "The filelogger has logged", fileLogger.errorCount
 
         root = logging.getLogger()
         root.setLevel(logging.INFO)
         processHandler = QueueHandler(loggingQueue)
         root.addHandler(processHandler)
 
-        numberOfErrors = 0
-        numberOfFiles = len(self.files)
-        bTime= time.time()
+        if fileLogger.errorCount > self.errorNum:
+            root.error("The ")
         
-        # The file processing occurs here
-        logQueue = None
-        for i, (filename, xmlpath) in enumerate(self.files):
-            if numberOfErrors > self.errorNum:
-                break
-            try:
-                root.info("Processing file %s %d/%d" %(filename,i+1,numberOfFiles))
-                exitcode = filerunner.FileRunner(logQueue,filename,xmlpath, self.version,
-                                                 self.lastVersion, self.modname, self.updatemod,
-                                                 self.params, self.funcDicts,self.outDir, self.rawDataDir)
-            except Exception as someException:
-                # root.exception will log an ERROR with printed traceback;
-                #   root.error will log an ERROR without traceback
-                root.exception(someException)
-                exitcode = -1
-                numberOfErrors+=1
-
-        eTime= time.time()
-        root.info("Processed for %f seconds" %(eTime-bTime,))
-        root.removeHandler(processHandler)
-        fileLogger.stop()      
+        processPool.close()
+        processPool.join()
+        fileLogger.stop()
         fileHandler.close()
-        timeStamp = time.strftime('%Y%m%d%H%M%S',time.gmtime())
-        try:
+        """try:
             if numberOfErrors > self.errorNum:
                 os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".error"))
             else:
                 os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".done"))
         except:
             if numberOfErrors > self.errorNum:
+                pass
                 os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".error"))
             else:
+                pass
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".done"))
+        """
+
+    """ runs the files in order on a single process and logs errors """
+    def runSequentially(self):
+        # setting up everything needed for logging the errors
+        loggingQueue = queue.Queue()
+        statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
+        fileHandler = logging.FileHandler(statusFileName)
+        logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        fileLogger = QueueListener(loggingQueue, fileHandler)
+        fileLogger.start()
+
+        # setting up the actual logger
+        root = logging.getLogger()
+        root.setLevel(logging.INFO)
+        processHandler = QueueHandler(loggingQueue)
+        root.addHandler(processHandler)
+
+        numberOfFiles = len(self.files)
+        bTime= time.time()
+        
+        # The file processing occurs here
+        logQueue = None
+        for i, (filename, xmlpath) in enumerate(self.files):
+            if fileLogger.errorCount > self.errorNum:
+                root.info("The job encountered %d errors and the max number of them allowed is %d" %(fileLogger.errorCount,self.errorNum))
+                break
+            
+            try:
+                root.info("Processing file %s %d/%d" %(filename,i+1,numberOfFiles))
+                exitcode = filerunner.FileRunner(logQueue,filename,xmlpath, self.version,
+                                                 self.lastVersion, self.modname, self.updatemod,
+                                                 self.params, self.funcDicts,self.outDir,
+                                                 self.rawDataDir)
+            except Exception as someException:
+                # root.exception will log an ERROR with printed traceback;
+                # root.error will log an ERROR without traceback
+                root.exception(someException)
+                exitcode = -1
+
+        eTime= time.time()
+        root.info("Processed for %f seconds" %(eTime-bTime,))
+        timeStamp = time.strftime('%Y%m%d%H%M%S',time.gmtime())
+
+        # cleaning up what was left of the loggers
+        # closing the fileHandler is important or else we cannot rename the file
+        root.removeHandler(processHandler)
+        fileLogger.stop()      
+        fileHandler.close()
+
+        # the renaming of the run file based on the way the file processing ended
+        if fileLogger.errorCount > self.errorNum:
+            try:
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".error"))
+            except:
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".error"))
+        else:
+            try:
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".done"))
+            except:
                 os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".done"))
 
         
@@ -248,7 +277,7 @@ def main(argv):
     paths = []
     outputDir = None
     jobname = ""
-    max_errors = 3
+    max_errors = 1
 
     if not (args.inputfolder or args.inputfile or args.fileofinputs):
         parser.error('Cannot proceed further as no form of input was specified Plesase use either -I,-i, or -f, please.')
@@ -291,8 +320,8 @@ def main(argv):
         automator = FOMAutomator(paths, xmlFiles,versionName,prevVersion,progModule,updateModule,exptypes, xmlPath,rawPath,max_errors,jobname)
         funcNames, paramsList = automator.requestParams(default=True)
         automator.setParams(funcNames, paramsList)
-        #automator.runParallel()
-        automator.runSequentially()
+        automator.runParallel()
+        #automator.runSequentially()
         
 
 if __name__ == "__main__":
