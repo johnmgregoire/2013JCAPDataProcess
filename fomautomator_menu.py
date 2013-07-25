@@ -1,6 +1,6 @@
 # Allison Schubauer and Daisy Hernandez
 # Created: 6/27/2013
-# Last Updated: 7/18/2013
+# Last Updated: 7/25/2013
 # For JCAP
 
 import os
@@ -16,8 +16,9 @@ import fomautomator
 import path_helpers
 import mysql_dbcommlib
 import itertools
+import time
 
-from fomautomator import FUNC_DIR, XML_DIR
+from fomautomator import FUNC_DIR
 from rawdataparser import RAW_DATA_PATH
 
 MOD_NAME = 'fomfunctions'
@@ -34,6 +35,7 @@ class echemvisDialog(QtGui.QMainWindow):
         super(echemvisDialog, self).__init__()
         self.parent=parent
         self.paths = []
+        self.outDir = None
         self.progModule = None
         self.updateModule = None
         self.exptypes = []
@@ -52,37 +54,49 @@ class echemvisDialog(QtGui.QMainWindow):
         self.mainWidget.setLayout(self.mainLayout)
 
         self.prog_label = QtGui.QLineEdit()
+        self.outDir_label = QtGui.QLineEdit()
         self.message_label = QtGui.QLabel()
         self.files_label = QtGui.QLineEdit()
         self.default_label = QtGui.QLabel()
+        self.parallel_label = QtGui.QLabel()
         self.prog_label.setReadOnly(True)
+        self.outDir_label.setReadOnly(True)
         self.files_label.setReadOnly(True)
         self.message_label.setText("Which files would you like to run your analysis on?")
         self.default_label.setText("Check to use default parameter values:")
+        self.parallel_label.setText("Check for parallel processing, uncheck for sequential:")
         self.files_label.setText("")
 
-        self.defaultButton=QtGui.QCheckBox(self)
+        self.defaultButton = QtGui.QCheckBox(self)
         self.defaultButton.setChecked(True)
+        self.parallelButton = QtGui.QCheckBox(self)
+        self.parallelButton.setChecked(True)
         
         self.progButton=QtGui.QPushButton("Select Program", self)
+        self.outDirButton=QtGui.QPushButton("Select Output \nDirectory", self)
         self.methodButton=QtGui.QPushButton("select\ninput method", self)
         self.folderButton=QtGui.QPushButton("select\nfolder", self)
         self.runButton=QtGui.QPushButton("Run", self)
 
-        self.progButton.clicked.connect(self.selectProgram)
+        self.progButton.pressed.connect(self.selectProgram)
+        self.outDirButton.pressed.connect(self.selectOutDir)
         self.methodButton.pressed.connect(self.selectmethod)
         self.folderButton.pressed.connect(self.selectfolder)
         self.runButton.pressed.connect(self.startAutomation)
 
         self.mainLayout.addWidget(self.progButton,0,0)
         self.mainLayout.addWidget(self.prog_label,1,0)
-        self.mainLayout.addWidget(self.message_label,2,0)
-        self.mainLayout.addWidget(self.methodButton,3,0)
-        self.mainLayout.addWidget(self.default_label,4,0)
-        self.mainLayout.addWidget(self.defaultButton,4,1)
-        self.mainLayout.addWidget(self.folderButton,5,0)
-        self.mainLayout.addWidget(self.files_label,6,0)
-        self.mainLayout.addWidget(self.runButton,7,0)
+        self.mainLayout.addWidget(self.outDirButton,2,0)
+        self.mainLayout.addWidget(self.outDir_label,3,0)
+        self.mainLayout.addWidget(self.message_label,4,0)
+        self.mainLayout.addWidget(self.methodButton,5,0)
+        self.mainLayout.addWidget(self.default_label,6,0)
+        self.mainLayout.addWidget(self.defaultButton,6,1)
+        self.mainLayout.addWidget(self.parallel_label,7,0)
+        self.mainLayout.addWidget(self.parallelButton,7,1)
+        self.mainLayout.addWidget(self.folderButton,8,0)
+        self.mainLayout.addWidget(self.files_label,9,0)
+        self.mainLayout.addWidget(self.runButton,10,0)
 
         # hide the buttons -- we haven't selected a method nor do we have files
         if self.dbdatasource:
@@ -151,21 +165,21 @@ class echemvisDialog(QtGui.QMainWindow):
 
 
     def startAutomation(self):
-        if self.paths:
+        if self.paths and self.outDir:
             if self.prevVersion:
-                xmlFiles = path_helpers.getFolderFiles(XML_DIR,'.xml')
+                xmlFiles = path_helpers.getFolderFiles(self.outDir,'.xml')
                 
             else:
                 xmlFiles = []
             if self.progModule:
                 errorNum = 0
-                jobName = "TestJobNameMenu"
+                jobName = "job" + time.strftime('%Y%m%d%H%M%S',time.gmtime())
                 self.automator = fomautomator.FOMAutomator(self.paths, xmlFiles,
                                                            self.versionName,
                                                            self.prevVersion,
                                                            self.progModule,
                                                            self.updateModule,
-                                                           self.exptypes,XML_DIR,RAW_DATA_PATH,
+                                                           self.exptypes,self.outDir,RAW_DATA_PATH,
                                                            errorNum,jobName)
 
                 
@@ -174,7 +188,10 @@ class echemvisDialog(QtGui.QMainWindow):
                     return 1
                 funcNames, paramsList = params
                 self.automator.setParams(funcNames, paramsList)
-                self.automator.runParallel()
+                if self.parallelButton.isChecked():
+                    self.automator.runParallel()
+                else:
+                    self.automator.runSequentially()
 
                                  
     def selectfolder(self, plate_id=None, selectexids=None, folder=None):
@@ -236,7 +253,7 @@ class echemvisDialog(QtGui.QMainWindow):
         if thepaths:
             self.paths = thepaths
             # we have some things to run, so we can show the button
-            if self.progModule:
+            if self.progModule and self.outDir:
                 self.runButton.show()
         return 1
 
@@ -284,9 +301,15 @@ class echemvisDialog(QtGui.QMainWindow):
             self.prog_label.setText(targetDir)
             # check targetDir for the target module first
             sys.path.insert(1, targetDir)
-            pyFiles = filter(lambda f: f.endswith('.py'), os.listdir(targetDir))
-            self.progModule = [os.path.splitext(mod)[0] for mod in pyFiles if
-                               mod == MOD_NAME+'.py'][0]
+            try:
+                pyFiles = filter(lambda f: f.endswith('.py'), os.listdir(targetDir))
+                self.progModule = [os.path.splitext(mod)[0] for mod in pyFiles if
+                                   mod == MOD_NAME+'.py'][0]
+            except:
+                print "Directory is invalid and does not contain the required files"
+                self.progModule = None
+                self.prog_label.setText("")
+                return 0
             try:
                 self.updateModule = [os.path.splitext(mod)[0] for mod in pyFiles if
                                      mod == UPDATE_MOD_NAME+'.py'][0]
@@ -304,9 +327,15 @@ class echemvisDialog(QtGui.QMainWindow):
                 self.prevVersion = ''
             print 'previous version:', self.prevVersion
 
-        if self.paths:
+        if self.paths and self.outDir:
             self.runButton.show()
 
+    def selectOutDir(self):
+        self.outDir=mygetdir(self, markstr='where the output should be saved')
+        self.outDir_label.setText(self.outDir)
+        if self.outDir and self.progModule and self.paths:
+            self.runButton.show()
+        
     """ gets the parameter input from the user or returns the default set """
     def getParams(self,default=False):
         params = self.automator.requestParams(default)
