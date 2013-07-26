@@ -35,6 +35,8 @@ import datetime
 # the directory where the versions of the fomfunctions are
 FUNC_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisFunctions"))
 XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML"))
+MOD_NAME = 'fomfunctions'
+UPDATE_MOD_NAME = 'fomfunctions_update'
 
 """ The FOMAutomator class provides the framework for processing data files
     automatically.  Its main method, defined in fom_commandline, can be accessed
