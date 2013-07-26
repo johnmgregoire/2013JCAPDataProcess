@@ -74,6 +74,7 @@ class FOMAutomator(object):
 ##        #   from the database
 ##        self.vshiftList = <list of vshifts>
 ## --------------------------------------------------------------------
+        self.processFuncs()
 
     """ returns a dictionary with all of the parameters and batch variables
         for the fom functions that will be run """
@@ -125,7 +126,6 @@ class FOMAutomator(object):
                     funcdict['params'].append(arg)
                     funcdict['#'+arg] = val
             self.funcDicts[fname] = funcdict
-        return self.funcDicts
 
     """ Returns a list of functions and their parameters, which can be
         changed by the user if running fomautomator_menu.  This function is
@@ -133,7 +133,7 @@ class FOMAutomator(object):
         parameters defined in the fom functions file are used; otherwise, the
         parameters are requested from the user. """
     def requestParams(self,default=True):
-        funcNames = (self.processFuncs().keys())
+        funcNames = self.funcDicts.keys()
         funcNames.sort()
         params_full = [[ fname, [(pname,type(pval),pval) for pname in self.funcDicts[fname]['params']
                      for pval in [self.funcDicts[fname]['#'+pname]]]]
@@ -178,6 +178,7 @@ class FOMAutomator(object):
         fileLogger = QueueListener(loggingQueue, fileHandler)
         fileLogger.start()
 
+        # keep track of when processing started
         bTime = time.time()
         
         # the jobs to process each of the files
@@ -195,6 +196,7 @@ class FOMAutomator(object):
 ## ----------------------------------------------------------------------------      
         
         processPool.map(makeFileRunner, jobs)
+        # keep track of when processing ended
         eTime = time.time()
         timeStamp = time.strftime('%Y%m%d%H%M%S',time.gmtime())
 
