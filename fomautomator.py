@@ -9,11 +9,13 @@
     updated data
 """
 
+import sys
+
 # append the DBComm library to the program's list of libraries to check
 #   for modules to import (needed for mysql_dbcommlib)
 sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
 
-import sys, os, argparse
+import os, argparse
 import cPickle as pickle
 from multiprocessing import Process, Pool, Manager
 from inspect import *
@@ -153,20 +155,26 @@ class FOMAutomator(object):
             fdict['#'+param] = val
             self.params[fname+'_'+param] = val
 
-    """ starts running the jobs in parallel and initializes logging """
+    """ processes the files in parallel, logs status messages and errors """
     def runParallel(self):
-        # the path to which to log - will change depending on the
-        # way processing ends or if there was another statusFile with the same
-        # name when it renames
+        # the path to which to log - will change depending on the way
+        #   processing ends and if a statusFile with the same
+        #   name already exists
         statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
 
-        # setting up the manager and things required to log due to multiprocessing
+        # set up the manager and objects required for logging due to multiprocessing
         pmanager = Manager()
+        # this queue takes messages from individual processes and passes them
+        #   to the QueueListener
         loggingQueue = pmanager.Queue()
         processPool = Pool()
+        # handler for the logging file
         fileHandler = logging.FileHandler(statusFileName)
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         fileHandler.setFormatter(logFormat)
+        # the QueueListener takes messages from the logging queue and passes
+        #   them through another queue to the fileHandler (logs safely because
+        #   only this main process writes to the fileHandler)sy
         fileLogger = QueueListener(loggingQueue, fileHandler)
         fileLogger.start()
 
