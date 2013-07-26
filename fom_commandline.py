@@ -98,8 +98,6 @@ def main(argv):
 
     if paths:
         automator = fomautomator.FOMAutomator(paths, versionName,prevVersion,progModule,updateModule,exptypes,outputDir,outputDir,max_errors,jobname)
-        funcNames, paramsList = automator.requestParams(default=True)
-        automator.setParams(funcNames, paramsList)
 
         # run the automator in the method described by the user
         if parallel:

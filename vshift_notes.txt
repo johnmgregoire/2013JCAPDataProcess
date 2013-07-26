@@ -1,9 +1,7 @@
 VSHIFT - HOW TO CHANGE THE PROGRAM TO ACCEPT VSHIFT FROM THE DATABASE
 
-Vshift is currently a function parameter to TafelSlopeVPerDec which can be changed upon running the functions through fomautomator_menu.  I've left comment blocks where needed labeled 'VSHIFT' in the code, all of which are mentioned below.  When you're ready to get vshift from the database, these are the pieces of the program that should be changed:
+Vshift is currently a function parameter to TafelSlopeVPerDec.  As a parameter, it can be changed upon running the functions through fomautomator_menu.  I've left comment blocks where needed labeled 'VSHIFT' in the code, all of which are mentioned below.  When you're ready to get vshift from the database, these are the pieces of the program that should be changed:
 
--- use dbcommlib in fomautor for entire self.files to get vshifts, map vshifts to files,
-	pass vshift as arg to filerunner (self.vshift) --
 1. The mysql_dbcommlib module is imported in fomautomator.py, which is where the database connection to retrieve the vshift values will need to be made.  In the FOMAutomator's __init__() method, there is an instruction to get a list of vshift values for all of the files that are being processed using self.files, which is the list of paths to raw data files.  (If only the file names are stored in the database, os.path.basename can be applied to each path in self.files.)
 2. In processFuncs(), a method of the FOMAutomator class, uncomment the VSHIFT block.  This will cause the default value of vshift defined in the figure of merit function to be ignored.
 3. In runParallel() and runSequentially() inside fomautomator.py, follow the instructions in the VSHIFT blocks to pass the correct value from the list of vshifts to each FileRunner.

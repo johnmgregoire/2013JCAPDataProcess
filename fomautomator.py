@@ -34,6 +34,19 @@ import datetime
 FUNC_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisFunctions"))
 XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML"))
 
+""" The FOMAutomator class provides the framework for processing data files
+    automatically.  Its main method, defined in fom_commandline, can be accessed
+    through the command line.  Alternatively, the FOMAutomator can be started
+    with the user interface in fomautomator_menu.  The automator can either
+    process files in sequence on a single process or use Python's multiprocessing
+    framework to process files on an optimal number of processes for your
+    system (determined by Python).  Both options are available through the command
+    line and user interface, but the command line defaults to running sequentially.
+    In both implementations, status messages and errors are logged to a file in the
+    output directory, and the FileRunner class (defined in filerunner.py) is used
+    to process each individual file.
+"""
+
 class FOMAutomator(object):
     
     """ initializes the automator with all necessary information """
@@ -60,7 +73,8 @@ class FOMAutomator(object):
 ##        self.vshiftList = <list of vshifts>
 ## --------------------------------------------------------------------
 
-    """ returns a dicitonary with all the parameters and batch variables in """
+    """ returns a dictionary with all of the parameters and batch variables
+        for the fom functions that will be run """
     def processFuncs(self):
         self.params = {}
         self.funcDicts = {}
@@ -111,9 +125,11 @@ class FOMAutomator(object):
             self.funcDicts[fname] = funcdict
         return self.funcDicts
 
-    """ if default is false, it returns a set of parameters with functions.
-    if true, it returns the functions along with the parameters and their
-    default values. the latter can be passed directly to setParams """
+    """ Returns a list of functions and their parameters, which can be
+        changed by the user if running fomautomator_menu.  This function is
+        only called by fomautomator_menu.   If 'default' is true, the default
+        parameters defined in the fom functions file are used; otherwise, the
+        parameters are requested from the user. """
     def requestParams(self,default=True):
         funcNames = (self.processFuncs().keys())
         funcNames.sort()
@@ -127,7 +143,9 @@ class FOMAutomator(object):
             params_and_answers = [[pname,pval] for func in params_full for (pname,ptype,pval) in func[1]]
             return funcs_names, params_and_answers
 
-    """ changes the parameter value in the function dictionary """
+    """ If the parameter values were changed by fomautomator_menu, save
+        the changed values in the automator's parameter dictionary and
+        function dictionary. """
     def setParams(self, funcNames, paramsList):
         for fname, params in zip(funcNames, paramsList):
             fdict = self.funcDicts[fname]
