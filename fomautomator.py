@@ -206,6 +206,7 @@ class FOMAutomator(object):
         processPool.close()
         processPool.join()
 
+        root = logging.getLogger()
         if fileLogger.errorCount > self.errorNum:
             root.info("The job encountered %d errors and the max number of them allowed is %d" %(fileLogger.errorCount,self.errorNum))
         root.info("Processed for %s H:M:S" %(str(datetime.timedelta(seconds=eTime-bTime)),))
