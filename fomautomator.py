@@ -9,12 +9,17 @@
     updated data
 """
 
+# append the DBComm library to the program's list of libraries to check
+#   for modules to import (needed for mysql_dbcommlib)
+sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
+
 import sys, os, argparse
 import cPickle as pickle
 from multiprocessing import Process, Pool, Manager
 from inspect import *
 from rawdataparser import RAW_DATA_PATH
-from qhtest import * # this also imports queue 
+from qhtest import * # this also imports queue
+import mysql_dbcommlib
 import jsontranslator
 import xmltranslator
 import importlib
@@ -38,7 +43,7 @@ class FOMAutomator(object):
         self.version = versionName
         self.lastVersion = prevVersion
         # the os.path.insert in the gui or in main is what makes 
-        # we select the correct function module
+        #   this select the correct function module
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
         self.updatemod = updateModule
@@ -86,11 +91,18 @@ class FOMAutomator(object):
             # for example t = 't(s)' in the function would mean t is equal to the raw data column t(s)
             for arg, val in arglist:
                 if isinstance(val, list):
+                    # batch variables can represent multiple data columns
                     funcdict['batchvars'].append(arg)
                     funcdict['~'+arg] = val
+## ------- VSHIFT ----------------------------------------------
+##                elif arg == 'vshift':
+##                    # connect to database and get vshift value
+##                    funcdict[arg] = <your vshift value>
+## -------------------------------------------------------------
                 elif isinstance(val, str):
                     funcdict[arg] = val
                 else:
+                    # user will have option to change function parameters
                     self.params[fname+'_'+arg] = val
                     funcdict['params'].append(arg)
                     funcdict['#'+arg] = val

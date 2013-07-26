@@ -6,15 +6,13 @@
 import os
 import sys
 
-sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
-
 import re
 import numpy
 import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
 import fomautomator
+from fomautomator import mysql_dbcommlib
 import path_helpers
-import mysql_dbcommlib
 import itertools
 import time
 
