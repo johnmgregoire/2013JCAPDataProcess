@@ -12,7 +12,6 @@ import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
 import fomautomator
 from fomautomator import mysql_dbcommlib
-from fomautomator import cPickle as pickle
 import path_helpers
 import itertools
 import time
@@ -51,12 +50,16 @@ class echemvisDialog(QtGui.QMainWindow):
 
         self.prog_label = QtGui.QLineEdit()
         self.outDir_label = QtGui.QLineEdit()
+        self.srcDir_label = QtGui.QLineEdit()
+        self.rawPCKDIR_label = QtGui.QLineEdit()
         self.message_label = QtGui.QLabel()
         self.files_label = QtGui.QLineEdit()
         self.default_label = QtGui.QLabel()
         self.parallel_label = QtGui.QLabel()
         self.prog_label.setReadOnly(True)
         self.outDir_label.setReadOnly(True)
+        self.srcDir_label.setReadOnly(True)
+        self.rawPCKDIR_label.setReadOnly(True)
         self.files_label.setReadOnly(True)
         self.message_label.setText("Which files would you like to run your analysis on?")
         self.default_label.setText("Check to use default parameter values:")
@@ -71,12 +74,15 @@ class echemvisDialog(QtGui.QMainWindow):
         self.progButton=QtGui.QPushButton("Select Program", self)
         self.outDirButton=QtGui.QPushButton("Select Output \nDirectory", self)
         self.srcDirButton=QtGui.QPushButton("Select Intermediates \nSource Directory", self)
+        self.rawPCKDirButton=QtGui.QPushButton("Select Raw PCK \nDirectory", self)
         self.methodButton=QtGui.QPushButton("select\ninput method", self)
         self.folderButton=QtGui.QPushButton("select\nfolder", self)
         self.runButton=QtGui.QPushButton("Run", self)
 
         self.progButton.pressed.connect(self.selectProgram)
         self.outDirButton.pressed.connect(self.selectOutDir)
+        self.srcDirButton.pressed.connect(self.selectSrcDirButton)
+        self.rawPCKDirButton.pressed.connect(self.selectRawPCKDirButton)
         self.methodButton.pressed.connect(self.selectmethod)
         self.folderButton.pressed.connect(self.selectfolder)
         self.runButton.pressed.connect(self.startAutomation)
@@ -86,6 +92,9 @@ class echemvisDialog(QtGui.QMainWindow):
         self.mainLayout.addWidget(self.outDirButton,2,0)
         self.mainLayout.addWidget(self.outDir_label,3,0)
         self.mainLayout.addWidget(self.srcDirButton,4,0)
+        self.mainLayout.addWidget(self.srcDir_label,5,0)
+        self.mainLayout.addWidget(self.rawPCKDirButton,6,0)
+        self.mainLayout.addWidget(self.rawPCKDIR_label,7,0)
         self.mainLayout.addWidget(self.message_label,8,0)
         self.mainLayout.addWidget(self.methodButton,9,0)
         self.mainLayout.addWidget(self.default_label,10,0)
@@ -340,6 +349,12 @@ class echemvisDialog(QtGui.QMainWindow):
         self.outDir_label.setText(self.outDir)
         if self.checkIfShowRun():
             self.runButton.show()
+
+    def selectSrcDirButton(self):
+        print "PRESSED"
+
+    def selectRawPCKDirButton(self):
+        print "PRESSED"
         
     """ gets the parameter input from the user or returns the default set """
     def getParams(self,default=False):
