@@ -35,7 +35,7 @@ def main(argv):
                         will be saved in the directory specified by -O", nargs=1)
     parser.add_argument('-X', '--errornum', type=int, help="The maximum number\
                         of errors - zero or larger", nargs=1)
-    parser.add_argument('-P', '--parallel', help="A flag to use parellel\
+    parser.add_argument('-P', '--parallel', help="A flag to use parallel\
                         processing. Different than sequential in logging and\
                         max error handling, also mainly used by Gui users.",\
                         action='store_true')
