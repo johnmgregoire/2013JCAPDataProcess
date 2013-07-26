@@ -22,7 +22,9 @@ class FileRunner(object):
     """ processes data and returns 1 if file was processed or 0 if file
         was too short (less than 100 lines) and was skipped """
     def __init__(self, queue, expfile, version, lastversion, modname,
+## ------- VSHIFT ---------------------------------------------------------------
                  updatemod, newparams, funcdicts, outDir, rawDataDir):#, vshift):
+## ------------------------------------------------------------------------------        
         self.txtfile = expfile
         # gets the name of the experiment from the file path
         self.exitSuccess = 0
@@ -154,7 +156,7 @@ class FileRunner(object):
                 return datavar
 ## ------- VSHIFT --------------------------------------------------------        
 ##            elif argname == 'vshift':
-##                # vshift should be an input to the FileRunner 
+##                # vshift is an input to the FileRunner 
 ##                return self.vshift
 ## -----------------------------------------------------------------------        
             elif (fdict[argname] in self.rawData) or (fdict[argname] in self.interData):

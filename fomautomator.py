@@ -9,17 +9,23 @@
     updated data
 """
 
-import sys, os
+# append the DBComm library to the program's list of libraries to check
+#   for modules to import (needed for mysql_dbcommlib)
+sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
+
+import sys, os, argparse
 import cPickle as pickle
 from multiprocessing import Process, Pool, Manager
 from inspect import *
 from rawdataparser import RAW_DATA_PATH
-from qhtest import * # this also imports queue 
+from qhtest import * # this also imports queue
+import mysql_dbcommlib
 import jsontranslator
 import xmltranslator
 import importlib
 import distutils.util
 import path_helpers
+import fomautomator_helpers
 import filerunner
 import time
 import datetime
@@ -48,6 +54,11 @@ class FOMAutomator(object):
         self.errorNum = errorNum
         self.jobname = jobname
         self.files = rawDataFiles
+## ---- VSHIFT --------------------------------------------------------       
+##        # use self.files to get a list of the corresponding vshifts
+##        #   from the database
+##        self.vshiftList = <list of vshifts>
+## --------------------------------------------------------------------
 
     """ returns a dicitonary with all the parameters and batch variables in """
     def processFuncs(self):
@@ -89,6 +100,10 @@ class FOMAutomator(object):
                     funcdict['~'+arg] = val
                 elif isinstance(val, str):
                     funcdict[arg] = val
+## ---- VSHIFT -------------------------------------------------------   
+##                elif arg == 'vshift':
+##                    pass
+## -------------------------------------------------------------------              
                 else:
                     self.params[fname+'_'+arg] = val
                     funcdict['params'].append(arg)
@@ -144,6 +159,14 @@ class FOMAutomator(object):
                  self.lastVersion, self.modname, self.updatemod,
                  self.params, self.funcDicts, self.outDir, self.rawDataDir)
                 for filename in self.files]
+
+## ---- VSHIFT ----------------------------------------------------------------       
+##        # replace the previous block with the following:
+##        jobs = [(loggingQueue, filename, self.version, self.lastVersion,
+##                 self.modname, self.updatemod, self.params, self.funcDicts,
+##                 self.outDir, self.rawDataDir, vshift) for (filename, vshift)
+##                in zip(self.files, self.vshiftList)]
+## ----------------------------------------------------------------------------      
         
         processPool.map(makeFileRunner, jobs)
         eTime = time.time()
@@ -194,6 +217,10 @@ class FOMAutomator(object):
         # The file processing occurs here
         logQueue = None
         for i, filename in enumerate(self.files):
+## ---- VSHIFT --------------------------------------------------------------------           
+##        # replace the line above with this:
+##        for i, (filename, vshift) in enumerate(zip(self.files, self.vshiftList)):
+## --------------------------------------------------------------------------------           
             if numberOfErrors > self.errorNum:
                 root.info("The job encountered %d errors and the max number of them allowed is %d" %(numberOfErrors,self.errorNum))
                 break
@@ -202,7 +229,9 @@ class FOMAutomator(object):
                 exitcode = filerunner.FileRunner(logQueue,filename, self.version,
                                                  self.lastVersion, self.modname, self.updatemod,
                                                  self.params, self.funcDicts,self.outDir,
-                                                 self.rawDataDir)
+## ---- VSHIFT -----------------------------------------------------------------
+                                                 self.rawDataDir)#, vshift)
+## -----------------------------------------------------------------------------
                 if exitcode.exitSuccess:
                     root.info('File %s completed  %d/%d' %(os.path.basename(filename),i+1,numberOfFiles))
             except Exception as someException:

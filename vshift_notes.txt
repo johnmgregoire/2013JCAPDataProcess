@@ -1,0 +1,13 @@
+VSHIFT - HOW TO CHANGE THE PROGRAM TO ACCEPT VSHIFT FROM THE DATABASE
+
+Vshift is currently a function parameter to TafelSlopeVPerDec which can be changed upon running the functions through fomautomator_menu.  I've left comment blocks where needed labeled 'VSHIFT' in the code, all of which are mentioned below.  When you're ready to get vshift from the database, these are the pieces of the program that should be changed:
+
+-- use dbcommlib in fomautor for entire self.files to get vshifts, map vshifts to files,
+	pass vshift as arg to filerunner (self.vshift) --
+1. The mysql_dbcommlib module is imported in fomautomator.py, which is where the database connection to retrieve the vshift values will need to be made.  In the FOMAutomator's __init__() method, there is an instruction to get a list of vshift values for all of the files that are being processed using self.files, which is the list of paths to raw data files.  (If only the file names are stored in the database, os.path.basename can be applied to each path in self.files.)
+2. In processFuncs(), a method of the FOMAutomator class, uncomment the VSHIFT block.  This will cause the default value of vshift defined in the figure of merit function to be ignored.
+3. In runParallel() and runSequentially() inside fomautomator.py, follow the instructions in the VSHIFT blocks to pass the correct value from the list of vshifts to each FileRunner.
+4. In the FileRunner's __init__() method, uncomment the lines where vshift is added to the FileRunner's argument list and set to self.vshift.
+5. In accessDict() inside filerunner.py, uncomment the VSHIFT block.  In processing the arguments of a figure of merit function, this handles vshift as a special case that is not a user-input parameter, batch variable, or raw or intermediate data value.  Again, you can do this for any other calibration values that you want to use as function arguments.
+
+These steps will allow the program to handle vshift internally without having to make any changes to the fomfunctions files.  There, vshift should still be a keyword argument to TafelSlopeVPerDec, but the default value will be overwritten at runtime as soon as the database retrieves the vshift value for each file.
