@@ -164,7 +164,7 @@ class FOMAutomator(object):
         # the path to which to log - will change depending on the way
         #   processing ends and if a statusFile with the same
         #   name already exists
-        statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
+        statusFileName = path_helpers.createPathWExtention(self.dstDir,self.jobname,".run")
 
         # set up the manager and objects required for logging due to multiprocessing
         pmanager = Manager()
@@ -218,21 +218,21 @@ class FOMAutomator(object):
 
         if fileLogger.errorCount > self.errorNum:
             try:
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".error"))
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname,".error"))
             except:
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".error"))
+D                os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname+timeStamp,".error"))
         else:
             try:
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".done"))
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname,".done"))
             except:
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".done"))
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname+timeStamp,".done"))
                 
     """ runs the files in order on a single process and logs errors """
     def runSequentially(self):
         # set up everything needed for logging the errors
         root = logging.getLogger()
         root.setLevel(logging.INFO)
-        statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
+        statusFileName = path_helpers.createPathWExtention(self.dstDir,self.jobname,".run")
         fileHandler = logging.FileHandler(statusFileName)
         logFormat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         fileHandler.setFormatter(logFormat)
@@ -256,9 +256,9 @@ class FOMAutomator(object):
                 # returns 1 if file was processed and 0 if file was skipped
                 exitcode = filerunner.FileRunner(logQueue,filename, self.version,
                                                  self.lastVersion, self.modname, self.updatemod,
-                                                 self.params, self.funcDicts,self.outDir,
+                                                 self.params, self.funcDicts,self.srcDir,
 ## ---- VSHIFT -----------------------------------------------------------------
-                                                 self.rawDataDir)#, vshift)
+                                                 self.dstDir, self.rawDataDir)#, vshift)
 ## -----------------------------------------------------------------------------
                 if exitcode.exitSuccess:
                     root.info('File %s completed  %d/%d' %(os.path.basename(filename),i+1,numberOfFiles))
@@ -281,14 +281,14 @@ class FOMAutomator(object):
         # the renaming of the run file based on the way the file processing ended
         if numberOfErrors > self.errorNum:
             try:
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".error"))
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname,".error"))
             except:
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".error"))
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname+timeStamp,".error"))
         else:
             try:
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".done"))
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname,".done"))
             except:
-                os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".done"))
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname+timeStamp,".done"))
 
 """ This function is started in a separate process by ProcessPool.map.
     Here, a FileRunner is created and a processHandler is added temporarily
