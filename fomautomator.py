@@ -34,7 +34,6 @@ import datetime
 
 # the directory where the versions of the fomfunctions are
 FUNC_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisFunctions"))
-XML_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisXML"))
 MOD_NAME = 'fomfunctions'
 UPDATE_MOD_NAME = 'fomfunctions_update'
 
@@ -55,7 +54,7 @@ class FOMAutomator(object):
     
     """ initializes the automator with all necessary information """
     def __init__(self, rawDataFiles, versionName, prevVersion,funcModule,
-                 updateModule, expTypes, outDir, rawDataDir,errorNum,jobname):
+                 updateModule, expTypes, srcDir, dstDir, rawDataDir,errorNum,jobname):
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
@@ -65,7 +64,8 @@ class FOMAutomator(object):
         self.modname = funcModule
         self.updatemod = updateModule
         self.expTypes = expTypes
-        self.outDir = outDir
+        self.srcDir = srcDir
+        self.dstDir = dstDir
         self.rawDataDir = rawDataDir
         # the max number of errors allowed by the user
         self.errorNum = errorNum
@@ -75,6 +75,8 @@ class FOMAutomator(object):
 ##        # use self.files to get a list of the corresponding vshifts
 ##        #   from the database
 ##        self.vshiftList = <list of vshifts>
+##        # this can be done with the experiment types for each file
+##        #   as well
 ## --------------------------------------------------------------------
         self.processFuncs()
 
@@ -184,16 +186,16 @@ class FOMAutomator(object):
         bTime = time.time()
         
         # the jobs to process each of the files
-        jobs = [(loggingQueue, filename, self.version,
-                 self.lastVersion, self.modname, self.updatemod,
-                 self.params, self.funcDicts, self.outDir, self.rawDataDir)
+        jobs = [(loggingQueue, filename, self.version, self.lastVersion,
+                 self.modname, self.updatemod,self.params, self.funcDicts,
+                 self.srcDir, self.dstDir, self.rawDataDir)
                 for filename in self.files]
 
 ## ---- VSHIFT ----------------------------------------------------------------       
 ##        # replace the previous block with the following:
 ##        jobs = [(loggingQueue, filename, self.version, self.lastVersion,
 ##                 self.modname, self.updatemod, self.params, self.funcDicts,
-##                 self.outDir, self.rawDataDir, vshift) for (filename, vshift)
+##                 self.srcDir, self.dstDir, self.rawDataDir, vshift) for (filename, vshift)
 ##                in zip(self.files, self.vshiftList)]
 ## ----------------------------------------------------------------------------      
         

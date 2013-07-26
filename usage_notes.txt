@@ -1,0 +1,14 @@
+﻿The binary encoding in the XML files is little-endian (specified explicitly in the arguments to struct.pack).
+
+Hard-coded directories that should be changed once the infrastructure for this program is in place:
+
+fomautomator.py -	sys.path.append() is called on whichever directory holds the 					mysql_dbcommlib module
+
+			FUNC_DIR: the location where all of the version folders of the 					functions are stored (this should be somewhere on the server and
+			should not be changeable in order for the data to be consistent
+			across the same version)
+
+rawdataparser.py -	RAW_DATA_PATH: the default location where the raw data .pck files 				are stored (this can be changed through the GUI or command line)
+			
+xmltranslator.py -	DTD_DIR: the directory that holds 'fomdata.dtd'
+
