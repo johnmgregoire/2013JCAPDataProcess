@@ -125,10 +125,8 @@ def main(argv):
 
         # run the automator in the method described by the user
         if parallel:
-            return
             automator.runParallel()
         else:
-            return
             automator.runSequentially()
         
 
