@@ -12,6 +12,7 @@ import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
 import fomautomator
 from fomautomator import mysql_dbcommlib
+from fomautomator import pickle
 import path_helpers
 import itertools
 import time
@@ -31,7 +32,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.parent=parent
         self.paths = []
         self.outDir = None
-        self.crcDir = None
+        self.srcDir = None
         self.rawPCKDir = None
         self.progModule = None
         self.updateModule = None
@@ -202,7 +203,9 @@ class echemvisDialog(QtGui.QMainWindow):
                                                            self.prevVersion,
                                                            self.progModule,
                                                            self.updateModule,
-                                                           self.exptypes,self.outDir,RAW_DATA_PATH,
+                                                           self.exptypes,
+                                                           self.srcDir, self.outDir,
+                                                           self.rawPCKDir,
                                                            errorNum,jobName)
 
                 
@@ -283,7 +286,7 @@ class echemvisDialog(QtGui.QMainWindow):
     # checks all the required things to show run
     def checkIfShowRun(self):
         if self.progModule and self.outDir and self.paths\
-           and self.rawPCKDir and self.srcDir:
+           and self.rawPCKDir:
             return True
         else:
             return False
@@ -368,7 +371,7 @@ class echemvisDialog(QtGui.QMainWindow):
             self.runButton.show()
 
     def selectSrcDirButton(self):
-        self.srcDir=mygetdir(self, markstr='where the output should be saved')
+        self.srcDir=mygetdir(self, markstr='where intermediate files should be loaded from')
         self.srcDir_label.setText(self.srcDir)
         if self.checkIfShowRun():
             self.runButton.show()
@@ -398,6 +401,14 @@ class echemvisDialog(QtGui.QMainWindow):
                 return None
             funcs_ans += ans
 
+<<<<<<< HEAD
+=======
+        with open(os.path.join(self.outDir, 'params.pck'), 'w') as paramfile:
+            pickle.dump((self.versionName, funcs_names,
+                         [list(a) for a in zip(funcs_params, funcs_ans)]),
+                        paramfile)
+
+>>>>>>> b9330ab4bd36901e9e190ac93336476c8bf68eaa
         return funcs_names,[list(a) for a in zip(funcs_params,funcs_ans)]
 
     

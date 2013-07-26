@@ -5,6 +5,7 @@
 
 import sys, os, argparse
 import fomautomator
+from fomautomator import pickle
 import path_helpers
 import fomautomator_helpers
 import time
@@ -37,12 +38,16 @@ def main(argv):
                         of errors - zero or larger", nargs=1)
     parser.add_argument('-P', '--parallel', help="A flag to use parallel\
                         processing. Different than sequential in logging and\
-                        max error handling, also mainly used by Gui users.",\
+                        max error handling, also mainly used by GUI users.",\
                         action='store_true')
     parser.add_argument('-V', '--funcversionpath', type=str, help= "The path to\
                         the version you want to used to process the functions.\
                         Else the default most recent version is used by looking into\
                         FUNC_DIR which is defined in the automator.py file", nargs=1)
+    parser.add_argument('-p', '--paramfile', type=str, help= "The path to a \
+                        pickled parameters file created for this version of the \
+                        functions.  Will use the function parameters in this file \
+                        to override the defaults.", nargs=1)
     args = parser.parse_args(argv)
 
     # the name of the program Module and the update Module
@@ -123,6 +128,19 @@ def main(argv):
                                               progModule,updateModule,exptypes,\
                                               srcDir,dstDir,rawDataDir,max_errors,jobname)
 
+        # load parameters from a pickled file
+        if args.paramfile:
+            with open(args.paramfile, 'r') as paramfile:
+                version, fnames, params = pickle.load(paramfile)
+            # make sure that the parameters were created for this version
+            #   of the functions
+            if version == versionName:
+                automator.setParams(fnames, params)
+            # otherwise, abort:
+            else:
+                return "The parameter file you gave is not compatible \
+                    with this functions version."
+        
         # run the automator in the method described by the user
         if parallel:
             automator.runParallel()
