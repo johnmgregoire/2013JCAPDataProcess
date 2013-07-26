@@ -220,7 +220,7 @@ class FOMAutomator(object):
             try:
                 os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname,".error"))
             except:
-D                os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname+timeStamp,".error"))
+                os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname+timeStamp,".error"))
         else:
             try:
                 os.rename(statusFileName, path_helpers.createPathWExtention(self.dstDir,self.jobname,".done"))
