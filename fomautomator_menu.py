@@ -384,6 +384,11 @@ class echemvisDialog(QtGui.QMainWindow):
                 return None
             funcs_ans += ans
 
+        with open(os.path.join(self.dstDir, 'params.txt'), 'w') as paramfile:
+            pickle.dump((self.versionName, funcs_names,
+                         [list(a) for a in zip(funcs_params, funcs_ans)]),
+                        paramfile)
+
         return funcs_names,[list(a) for a in zip(funcs_params,funcs_ans)]
 
     
