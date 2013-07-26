@@ -9,23 +9,17 @@
     updated data
 """
 
-# append the DBComm library to the program's list of libraries to check
-#   for modules to import (needed for mysql_dbcommlib)
-sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
-
-import sys, os, argparse
+import sys, os
 import cPickle as pickle
 from multiprocessing import Process, Pool, Manager
 from inspect import *
 from rawdataparser import RAW_DATA_PATH
-from qhtest import * # this also imports queue
-import mysql_dbcommlib
+from qhtest import * # this also imports queue 
 import jsontranslator
 import xmltranslator
 import importlib
 import distutils.util
 import path_helpers
-import fomautomator_helpers
 import filerunner
 import time
 import datetime
@@ -43,7 +37,7 @@ class FOMAutomator(object):
         self.version = versionName
         self.lastVersion = prevVersion
         # the os.path.insert in the gui or in main is what makes 
-        #   this select the correct function module
+        # we select the correct function module
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
         self.updatemod = updateModule
@@ -91,18 +85,11 @@ class FOMAutomator(object):
             # for example t = 't(s)' in the function would mean t is equal to the raw data column t(s)
             for arg, val in arglist:
                 if isinstance(val, list):
-                    # batch variables can represent multiple data columns
                     funcdict['batchvars'].append(arg)
                     funcdict['~'+arg] = val
-## ------- VSHIFT ----------------------------------------------
-##                elif arg == 'vshift':
-##                    # connect to database and get vshift value
-##                    funcdict[arg] = <your vshift value>
-## -------------------------------------------------------------
                 elif isinstance(val, str):
                     funcdict[arg] = val
                 else:
-                    # user will have option to change function parameters
                     self.params[fname+'_'+arg] = val
                     funcdict['params'].append(arg)
                     funcdict['#'+arg] = val
@@ -245,8 +232,8 @@ class FOMAutomator(object):
                 os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname,".done"))
             except:
                 os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".done"))
-                
 
+                
 def makeFileRunner(args):
     queue = args[0]
     filename = os.path.basename(args[1])
@@ -269,76 +256,3 @@ def makeFileRunner(args):
     finally:
         root.removeHandler(processHandler)
         return exitcode
-    
-
-def main(argv):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-I','--inputfolder', type=str, help="The input folder", nargs=1)
-    parser.add_argument('-i', '--inputfile',  type=str, help="The input file",  nargs=1)
-    parser.add_argument('-f', '--fileofinputs', type=str, help="File containing input files", nargs=1)
-    parser.add_argument('-J','--jobname', type=str, help="The job_name", nargs=1)
-    parser.add_argument('-O', '--outputfolder', type=str, help="The output folder", nargs=1, required=True)
-    parser.add_argument('-X', '--errornum', type=int, help="The maximum number of errors", nargs=1)
-    parser.add_argument('-P', '--parallel', \
-                        help="A flag if you want to use the parellel processing. Different than sequential and mainly used by Gui users.", \
-                        action='store_true')
-    args = parser.parse_args(argv)
-
-    paths = []
-    outputDir = None
-    jobname = ""
-    max_errors = 1
-    parallel = False
-
-    if not (args.inputfolder or args.inputfile or args.fileofinputs):
-        parser.error('Cannot proceed further as no form of input was specified Plesase use either -I,-i, or -f, please.')
-        
-    if args.inputfolder:
-        paths += path_helpers.getFolderFiles(args.inputfolder[0], '.txt')
-
-    if args.inputfile:
-        paths += args.inputfolder
-
-    if args.fileofinputs:
-        try:
-            with open(args.fileofinputs[0], 'r') as fileWithInputFiles:
-               paths += fileWithInputFiles.read().splitlines()
-        except:
-            #TODO: Putt a message to the logger
-            pass
-    if args.jobname:
-        jobname=args.jobname[0]
-
-    if args.errornum:
-        max_errors = args.errornum[0]
-        
-    if args.outputfolder:
-        outputDir = args.outputfolder[0]
-
-    if args.parallel:
-        parallel = args.parallel
-
-
-    versionName, prevVersion = fomautomator_helpers.getVersions(FUNC_DIR)
-    updateModule = "fomfunctions_update"
-    progModule = "fomfunctions"
-    sys.path.insert(1, os.path.join(FUNC_DIR,versionName))
-    exptypes = []
-    xmlPath = XML_DIR
-    rawPath = RAW_DATA_PATH
-
-    if paths:
-        automator = FOMAutomator(paths, versionName,prevVersion,progModule,updateModule,exptypes, xmlPath,rawPath,max_errors,jobname)
-        funcNames, paramsList = automator.requestParams(default=True)
-        automator.setParams(funcNames, paramsList)
-        
-        if parallel:
-            automator.runParallel()
-        else:
-            automator.runSequentially()
-        
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
-
-# python fomautomator.py -I "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\5 File" -O "C:\Users\dhernand.HTEJCAP\Desktop\Working Folder\AutoAnalysisXML" -J "jobnametest"
