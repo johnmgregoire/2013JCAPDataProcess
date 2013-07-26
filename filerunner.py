@@ -19,18 +19,18 @@ import itertools
 """
 class FileRunner(object):
 
-    """ processes data and returns 1 if file was processed or 0 if file
-        was too short (less than 100 lines) and was skipped """
+    """ if updating, takes in intermediate data from srcDir and saves it
+        to dstDir """
     def __init__(self, queue, expfile, version, lastversion, modname,
 ## ------- VSHIFT ---------------------------------------------------------------
-                 updatemod, newparams, funcdicts, outDir, rawDataDir):#, vshift):
+                 updatemod, newparams, funcdicts, srcDir, dstDir, rawDataDir):#, vshift):
 ## ------------------------------------------------------------------------------        
         self.txtfile = expfile
         # gets the name of the experiment from the file path
         self.exitSuccess = 0
         self.expfilename = os.path.splitext(os.path.split(self.txtfile)[1])[0]
         self.version = version
-        self.outDir = outDir
+        self.dstDir = dstDir
         self.rawDataDir = rawDataDir
         self.fdicts = funcdicts
 ## ------- VSHIFT --------------------------------------------------------       
@@ -46,12 +46,12 @@ class FileRunner(object):
         #   the intermediate data will be written from scratch.
         if lastversion:
             try:
-               pckpath = os.path.join(outDir, self.expfilename+'_'+
-                                      lastversion+'.pck')
-               with open(pckpath, 'r') as pckfile:
-                   self.FOMs, self.interData, self.params = pickle.load(pckfile)
-               funcMod = __import__(updatemod)
-               updating = True
+                pckpath = os.path.join(srcDir, self.expfilename+'.pck')
+                with open(pckpath, 'r') as pckfile:
+                    oldversion, self.FOMs, self.interData, self.params = pickle.load(pckfile)
+                if oldversion == lastversion:
+                    funcMod = __import__(updatemod)
+                    updating = True
             except:
                pass
         if not updating:
@@ -80,7 +80,7 @@ class FileRunner(object):
             if isinstance(val, jsontranslator.numpy.ndarray):
                 self.rawDataLength = len(val)
                 break
-        # this will happen if the for loop never breaks
+        # this will happen if the for loop never finds a data column
         else:
             raise ValueError("Not a valid raw data file (check .txt or .pck file).")
 
@@ -135,7 +135,7 @@ class FileRunner(object):
                     self.FOMs[('_').join(map(str, varset)+[fname])] = fom
         # save all dictionaries in pickle file, then remove certain
         #   intermediates, then save JSON and XML files
-        self.savePck(pckpath)
+        self.savePck()
         # remove intermediates that aren't same length as raw data
         self.stripData()
         self.saveJSON()
@@ -178,22 +178,18 @@ class FileRunner(object):
 
     """ save tuple of self.FOMs, self.interData (complete), and self.params
         in a pickle file of the name expfilename_version.pck """
-    def savePck(self, oldfilepath):
-        # remove old version of intermediate data for this file
-        try:
-            os.remove(oldfilepath)
-        except:
-            pass
-        savepath = os.path.join(self.outDir, self.expfilename+'_'+self.version+'.pck')
+    def savePck(self):
+        savepath = os.path.join(self.dstDir, self.expfilename+'.pck')
         with open(savepath, 'w') as pckfile:
-            pickle.dump((self.FOMs, self.interData, self.params), pckfile)
+            pickle.dump((self.version, self.FOMs, self.interData,
+                         self.params), pckfile)
 
     """ save tuple of version name, self.FOMs, self.interData (stripped),
         and self.params in a plain-text JSON file (tuple will be turned
         into JSON array and dicts will be turned into JSON objects)
     """
     def saveJSON(self):
-        savepath = os.path.join(self.outDir, self.expfilename+'.json')
+        savepath = os.path.join(self.dstDir, self.expfilename+'.json')
         dataTup = (self.FOMs, self.interData, self.params)
         jsontranslator.toJSON(savepath, self.version, dataTup)
 
@@ -203,6 +199,6 @@ class FileRunner(object):
         attribute of the root element.  See fomdata.dtd for the structural
         convention of these XML files. """
     def saveXML(self):
-        savepath = os.path.join(self.outDir, self.expfilename+'.xml')
+        savepath = os.path.join(self.dstDir, self.expfilename+'.xml')
         dataTup = (self.FOMs, self.interData, self.params)
         xmltranslator.toXML(savepath, self.version, dataTup)

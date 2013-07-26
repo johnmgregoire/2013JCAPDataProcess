@@ -9,3 +9,8 @@ Vshift is currently a function parameter to TafelSlopeVPerDec.  As a parameter, 
 5. In accessDict() inside filerunner.py, uncomment the VSHIFT block.  In processing the arguments of a figure of merit function, this handles vshift as a special case that is not a user-input parameter, batch variable, or raw or intermediate data value.  Again, you can do this for any other calibration values that you want to use as function arguments.
 
 These steps will allow the program to handle vshift internally without having to make any changes to the fomfunctions files.  There, vshift should still be a keyword argument to TafelSlopeVPerDec, but the default value will be overwritten at runtime as soon as the database retrieves the vshift value for each file.
+
+EXPERIMENT TYPES:
+The experiment types can be retrieved from the database in the same way as steps 1-4 above.  Once in FileRunner, you can remove the line "expType = self.rawData.get('BLTechniqueName')" as long as the name of the experiment type input is expType.
+
+Alternatively, if you want to get the file paths, experiment types, and vshift values as a single record from the database, you can either pass the path of the pickled record to FOMAutomator and unpickle the lists there, or you can pass the lists to FOMAutomator.  There is one FOMAutomator created in the startAutomation() method in fomautomator_menu, and there is one FOMAutomator created near the end of the  fom_commandline file.

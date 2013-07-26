@@ -3,8 +3,6 @@ import numpy
 import ctypes, struct, base64
 import os.path, ast, distutils.util
 
-numpy.set_printoptions(threshold=numpy.nan)
-
 DTD_DIR = os.path.normpath(os.path.expanduser("~/Documents/GitHub/JCAPDataProcess"))
 
 def toXML(filepath, verNum, dictTup):
