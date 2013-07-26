@@ -31,6 +31,8 @@ class echemvisDialog(QtGui.QMainWindow):
         self.parent=parent
         self.paths = []
         self.outDir = None
+        self.crcDir = None
+        self.rawPCKDir = None
         self.progModule = None
         self.updateModule = None
         self.exptypes = []
@@ -51,7 +53,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.prog_label = QtGui.QLineEdit()
         self.outDir_label = QtGui.QLineEdit()
         self.srcDir_label = QtGui.QLineEdit()
-        self.rawPCKDIR_label = QtGui.QLineEdit()
+        self.rawPCKDir_label = QtGui.QLineEdit()
         self.message_label = QtGui.QLabel()
         self.files_label = QtGui.QLineEdit()
         self.default_label = QtGui.QLabel()
@@ -59,7 +61,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.prog_label.setReadOnly(True)
         self.outDir_label.setReadOnly(True)
         self.srcDir_label.setReadOnly(True)
-        self.rawPCKDIR_label.setReadOnly(True)
+        self.rawPCKDir_label.setReadOnly(True)
         self.files_label.setReadOnly(True)
         self.message_label.setText("Which files would you like to run your analysis on?")
         self.default_label.setText("Check to use default parameter values:")
@@ -94,7 +96,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.mainLayout.addWidget(self.srcDirButton,4,0)
         self.mainLayout.addWidget(self.srcDir_label,5,0)
         self.mainLayout.addWidget(self.rawPCKDirButton,6,0)
-        self.mainLayout.addWidget(self.rawPCKDIR_label,7,0)
+        self.mainLayout.addWidget(self.rawPCKDir_label,7,0)
         self.mainLayout.addWidget(self.message_label,8,0)
         self.mainLayout.addWidget(self.methodButton,9,0)
         self.mainLayout.addWidget(self.default_label,10,0)
@@ -266,7 +268,8 @@ class echemvisDialog(QtGui.QMainWindow):
 
     # checks all the required things to show run
     def checkIfShowRun(self):
-        if self.progModule and self.outDir and self.paths:
+        if self.progModule and self.outDir and self.paths\
+           and self.rawPCKDir and self.srcDir:
             return True
         else:
             return False
@@ -351,10 +354,16 @@ class echemvisDialog(QtGui.QMainWindow):
             self.runButton.show()
 
     def selectSrcDirButton(self):
-        print "PRESSED"
+        self.srcDir=mygetdir(self, markstr='where the output should be saved')
+        self.srcDir_label.setText(self.srcDir)
+        if self.checkIfShowRun():
+            self.runButton.show()
 
     def selectRawPCKDirButton(self):
-        print "PRESSED"
+        self.rawPCKDir=mygetdir(self, markstr='where the output should be saved')
+        self.rawPCKDir_label.setText(self.rawPCKDir)
+        if self.checkIfShowRun():
+            self.runButton.show()
         
     """ gets the parameter input from the user or returns the default set """
     def getParams(self,default=False):
