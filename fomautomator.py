@@ -9,13 +9,13 @@
     updated data
 """
 
-import sys
+import sys, os
 
 # append the DBComm library to the program's list of libraries to check
 #   for modules to import (needed for mysql_dbcommlib)
 sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
 
-import os, argparse
+import argparse
 import cPickle as pickle
 from multiprocessing import Process, Pool, Manager
 from inspect import *
@@ -174,7 +174,7 @@ class FOMAutomator(object):
         fileHandler.setFormatter(logFormat)
         # the QueueListener takes messages from the logging queue and passes
         #   them through another queue to the fileHandler (logs safely because
-        #   only this main process writes to the fileHandler)sy
+        #   only this main process writes to the fileHandler)
         fileLogger = QueueListener(loggingQueue, fileHandler)
         fileLogger.start()
 
