@@ -19,9 +19,6 @@ import time
 from fomautomator import FUNC_DIR
 from rawdataparser import RAW_DATA_PATH
 
-MOD_NAME = 'fomfunctions'
-UPDATE_MOD_NAME = 'fomfunctions_update'
-
 ################################################################################
 ############################ echemvisDialog class ##############################
 ################################################################################
@@ -302,7 +299,7 @@ class echemvisDialog(QtGui.QMainWindow):
             try:
                 pyFiles = filter(lambda f: f.endswith('.py'), os.listdir(targetDir))
                 self.progModule = [os.path.splitext(mod)[0] for mod in pyFiles if
-                                   mod == MOD_NAME+'.py'][0]
+                                   mod == fomautomator.MOD_NAME+'.py'][0]
             except:
                 print "Directory is invalid and does not contain the required files"
                 self.progModule = None
@@ -310,7 +307,7 @@ class echemvisDialog(QtGui.QMainWindow):
                 return 0
             try:
                 self.updateModule = [os.path.splitext(mod)[0] for mod in pyFiles if
-                                     mod == UPDATE_MOD_NAME+'.py'][0]
+                                     mod == fomautomator.UPDATE_MOD_NAME+'.py'][0]
             except IndexError:
                 # no previous version
                 pass

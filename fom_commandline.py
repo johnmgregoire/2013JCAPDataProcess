@@ -39,8 +39,8 @@ def main(argv):
     args = parser.parse_args(argv)
 
     # the name of the program Module and the update Module
-    progModule = "fomfunctions"
-    updateModule = "fomfunctions_update"
+    progModule = fomautomator.MOD_NAME
+    updateModule = fomautomator.UPDATE_MOD_NAME
     # default values that get changed by commandline flags
     paths = []
     outputDir = None
