@@ -35,6 +35,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.rawPCKDir = None
         self.progModule = None
         self.updateModule = None
+        self.maxError = 30
         self.exptypes = []
         self.initDB()
         self.initUI()
@@ -58,6 +59,8 @@ class echemvisDialog(QtGui.QMainWindow):
         self.files_label = QtGui.QLineEdit()
         self.default_label = QtGui.QLabel()
         self.parallel_label = QtGui.QLabel()
+        self.maxError_label = QtGui.QLabel()
+        self.maxError_field = QtGui.QLineEdit()
         self.prog_label.setReadOnly(True)
         self.outDir_label.setReadOnly(True)
         self.srcDir_label.setReadOnly(True)
@@ -66,6 +69,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.message_label.setText("Which files would you like to run your analysis on?")
         self.default_label.setText("Check to use default parameter values:")
         self.parallel_label.setText("Check for parallel processing, uncheck for sequential:")
+        self.maxError_label.setText("Max Errors")
         self.files_label.setText("")
 
         self.defaultButton = QtGui.QCheckBox(self)
@@ -103,9 +107,11 @@ class echemvisDialog(QtGui.QMainWindow):
         self.mainLayout.addWidget(self.defaultButton,10,1)
         self.mainLayout.addWidget(self.parallel_label,11,0)
         self.mainLayout.addWidget(self.parallelButton,11,1)
-        self.mainLayout.addWidget(self.folderButton,12,0)
-        self.mainLayout.addWidget(self.files_label,13,0)
-        self.mainLayout.addWidget(self.runButton,14,0)
+        self.mainLayout.addWidget(self.maxError_label,12,0)
+        self.mainLayout.addWidget(self.maxError_label,12,1)
+        self.mainLayout.addWidget(self.folderButton,13,0)
+        self.mainLayout.addWidget(self.files_label,14,0)
+        self.mainLayout.addWidget(self.runButton,15,0)
 
         # hide the buttons -- we haven't selected a method nor do we have files
         if self.dbdatasource:
@@ -360,7 +366,7 @@ class echemvisDialog(QtGui.QMainWindow):
             self.runButton.show()
 
     def selectRawPCKDirButton(self):
-        self.rawPCKDir=mygetdir(self, markstr='where the output should be saved')
+        self.rawPCKDir=mygetdir(self,xpath=RAW_DATA_PATH, markstr='where the output should be saved')
         self.rawPCKDir_label.setText(self.rawPCKDir)
         if self.checkIfShowRun():
             self.runButton.show()
@@ -383,11 +389,6 @@ class echemvisDialog(QtGui.QMainWindow):
             if ans == None:
                 return None
             funcs_ans += ans
-
-        with open(os.path.join(self.dstDir, 'params.txt'), 'w') as paramfile:
-            pickle.dump((self.versionName, funcs_names,
-                         [list(a) for a in zip(funcs_params, funcs_ans)]),
-                        paramfile)
 
         return funcs_names,[list(a) for a in zip(funcs_params,funcs_ans)]
 
