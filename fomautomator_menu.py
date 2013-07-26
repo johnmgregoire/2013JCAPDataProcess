@@ -70,6 +70,7 @@ class echemvisDialog(QtGui.QMainWindow):
         
         self.progButton=QtGui.QPushButton("Select Program", self)
         self.outDirButton=QtGui.QPushButton("Select Output \nDirectory", self)
+        self.srcDirButton=QtGui.QPushButton("Select Intermediates \nSource Directory", self)
         self.methodButton=QtGui.QPushButton("select\ninput method", self)
         self.folderButton=QtGui.QPushButton("select\nfolder", self)
         self.runButton=QtGui.QPushButton("Run", self)
@@ -84,15 +85,16 @@ class echemvisDialog(QtGui.QMainWindow):
         self.mainLayout.addWidget(self.prog_label,1,0)
         self.mainLayout.addWidget(self.outDirButton,2,0)
         self.mainLayout.addWidget(self.outDir_label,3,0)
-        self.mainLayout.addWidget(self.message_label,4,0)
-        self.mainLayout.addWidget(self.methodButton,5,0)
-        self.mainLayout.addWidget(self.default_label,6,0)
-        self.mainLayout.addWidget(self.defaultButton,6,1)
-        self.mainLayout.addWidget(self.parallel_label,7,0)
-        self.mainLayout.addWidget(self.parallelButton,7,1)
-        self.mainLayout.addWidget(self.folderButton,8,0)
-        self.mainLayout.addWidget(self.files_label,9,0)
-        self.mainLayout.addWidget(self.runButton,10,0)
+        self.mainLayout.addWidget(self.srcDirButton,4,0)
+        self.mainLayout.addWidget(self.message_label,8,0)
+        self.mainLayout.addWidget(self.methodButton,9,0)
+        self.mainLayout.addWidget(self.default_label,10,0)
+        self.mainLayout.addWidget(self.defaultButton,10,1)
+        self.mainLayout.addWidget(self.parallel_label,11,0)
+        self.mainLayout.addWidget(self.parallelButton,11,1)
+        self.mainLayout.addWidget(self.folderButton,12,0)
+        self.mainLayout.addWidget(self.files_label,13,0)
+        self.mainLayout.addWidget(self.runButton,14,0)
 
         # hide the buttons -- we haven't selected a method nor do we have files
         if self.dbdatasource:
@@ -249,9 +251,16 @@ class echemvisDialog(QtGui.QMainWindow):
         if thepaths:
             self.paths = thepaths
             # we have some things to run, so we can show the button
-            if self.progModule and self.outDir:
+            if self.checkIfShowRun():
                 self.runButton.show()
         return 1
+
+    # checks all the required things to show run
+    def checkIfShowRun(self):
+        if self.progModule and self.outDir and self.paths:
+            return True
+        else:
+            return False
 
     """ gets the path info and returns them as a list """
     def getPathInfo(self, ext='.txt'):
@@ -323,13 +332,13 @@ class echemvisDialog(QtGui.QMainWindow):
                 self.prevVersion = ''
             print 'previous version:', self.prevVersion
 
-        if self.paths and self.outDir:
+        if self.checkIfShowRun():
             self.runButton.show()
 
     def selectOutDir(self):
         self.outDir=mygetdir(self, markstr='where the output should be saved')
         self.outDir_label.setText(self.outDir)
-        if self.outDir and self.progModule and self.paths:
+        if self.checkIfShowRun():
             self.runButton.show()
         
     """ gets the parameter input from the user or returns the default set """

@@ -1,6 +1,6 @@
 # Allison Schubauer and Daisy Hernandez
 # Created: 7/25/2013
-# Last Updated: 7/25/2013
+# Last Updated: 7/26/2013
 # For JCAP
 
 import sys, os, argparse
@@ -25,17 +25,24 @@ def main(argv):
                         while processing. This file will change its extension\
                         if to .done or .error. If more errors than the max\
                         number of errors it will be .error, else .done.",nargs=1)
-    parser.add_argument('-O', '--outputfolder', type=str, help="The output\
+    parser.add_argument('-O', '--outputfolder', type=str, help="The destination\
                         folder where all outputs will be saved. raw data pck\
                         files will be saved here unless -R flag used. ", nargs=1, required=True)
+    parser.add_argument('-S', '--sourcefolder', type=str, help=" A folder where\
+                        intermediate files are read from.", nargs=1)
     parser.add_argument('-R', '--rawfolder', type=str, help="The folder where\
                         raw data files will be saved unless. If not used, they\
                         will be saved in the directory specified by -O", nargs=1)
-    parser.add_argument('-X', '--errornum', type=int, help="The maximum number of errors - zero or larger", nargs=1)
+    parser.add_argument('-X', '--errornum', type=int, help="The maximum number\
+                        of errors - zero or larger", nargs=1)
     parser.add_argument('-P', '--parallel', help="A flag to use parellel\
                         processing. Different than sequential in logging and\
                         max error handling, also mainly used by Gui users.",\
                         action='store_true')
+    parser.add_argument('-V', '--funcversionpath', type=str, help= "The path to\
+                        the version you want to used to process the functions.\
+                        Else the default most recent version is used by looking into\
+                        FUNC_DIR which is defined in the automator.py file", nargs=1)
     args = parser.parse_args(argv)
 
     # the name of the program Module and the update Module
@@ -43,13 +50,18 @@ def main(argv):
     updateModule = fomautomator.UPDATE_MOD_NAME
     # default values that get changed by commandline flags
     paths = []
-    outputDir = None
+    srcDir = None
+    dstDir = None
     rawDataDir = None
     jobname = ""
     max_errors = 10
     parallel = False
+    # the directory with all the versions of the functions
+    directoryWithAllVersions = fomautomator.FUNC_DIR
     # this does not get changed by the commandline, it is currently more useful
-    # through the GUI when we do the database connection
+    # through the GUI when we do the database connection. it gets the experiement
+    # types in a short list for all the paths -- this allowss us to get the params.
+    # If unsure, always set to empty list.
     exptypes = []
 
     if not (args.inputfolder or args.inputfile or args.fileofinputs):
@@ -80,7 +92,7 @@ def main(argv):
 
     # there is no need to do an else because the flag is required    
     if args.outputfolder:
-        outputDir = args.outputfolder[0]
+        dstDir = args.outputfolder[0]
         rawDataDir = args.outputfolder[0]
 
     # reset the rawDataDir since a directory to save raw data files was given
@@ -90,14 +102,26 @@ def main(argv):
     if args.parallel:
         parallel = args.parallel
 
-    # gets the most recent version folder of the fomfunctions in the FUNC_DIR
-    versionName, prevVersion = fomautomator_helpers.getVersions(fomautomator.FUNC_DIR)
-    # inserts only most recent version so correct functions are used
-    # as the naming of the function file is the same in all versions
-    sys.path.insert(1, os.path.join(fomautomator.FUNC_DIR,versionName))
+    # if we're giving a version path to use, great! Else, we will use
+    # that in our default folder and get the most recent version.
+    if args.funcversionpath:
+        versionName, prevVersion = fomautomator_helpers.getVersionsByName(args.funcversionpath[0])
+        sys.path.insert(1,args.funcversionpath[0])
+    else:
+        # gets the most recent version folder of the fomfunctions in the FUNC_DIR
+        versionName, prevVersion = fomautomator_helpers.getRVersions(fomautomator.FUNC_DIR)
+        # inserts only most recent version so correct functions are used
+        # as the naming of the function file is the same in all versions
+        sys.path.insert(1, os.path.join(fomautomator.FUNC_DIR,versionName))
 
+     # thedirectory where we should check for intermediates
+    if args.sourcefolder:
+        srcDir = args.sourcefolder[0]
+        
     if paths:
-        automator = fomautomator.FOMAutomator(paths, versionName,prevVersion,progModule,updateModule,exptypes,outputDir,outputDir,max_errors,jobname)
+        automator = fomautomator.FOMAutomator(paths, versionName,prevVersion,\
+                                              progModule,updateModule,exptypes,\
+                                              srcDir,dstDir,rawDataDir,max_errors,jobname)
 
         # run the automator in the method described by the user
         if parallel:
