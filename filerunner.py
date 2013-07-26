@@ -56,12 +56,14 @@ class FileRunner(object):
             self.FOMs, self.interData, self.params = {}, {}, {}
             funcMod = __import__(modname)
         for param in newparams:
+
             self.params[param] = newparams[param]
         # look for a raw data dictionary before creating one from the text file
         try:
             rawdatafile = os.path.join(self.rawDataDir,
                                        [fname for fname in os.listdir(self.rawDataDir)
-                                        if self.expfilename in fname][0])
+                                        if self.expfilename in fname and
+                                        self.expfilename.endswith(".pck")][0])
         except IndexError:
             rawdatafile = rawdataparser.readechemtxt(self.txtfile)
         with open(rawdatafile) as rawdata:
@@ -79,6 +81,7 @@ class FileRunner(object):
         # this will happen if the for loop never breaks
         else:
             raise ValueError("Not a valid raw data file (check .txt or .pck file).")
+
         # skip this file if it has fewer than 100 lines of data
         if self.rawDataLength < 100:
             return
