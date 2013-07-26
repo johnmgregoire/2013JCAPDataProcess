@@ -61,6 +61,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.parallel_label = QtGui.QLabel()
         self.maxError_label = QtGui.QLabel()
         self.maxError_field = QtGui.QLineEdit()
+        self.maxError_field.setFixedWidth(40)
         self.prog_label.setReadOnly(True)
         self.outDir_label.setReadOnly(True)
         self.srcDir_label.setReadOnly(True)
@@ -108,7 +109,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.mainLayout.addWidget(self.parallel_label,11,0)
         self.mainLayout.addWidget(self.parallelButton,11,1)
         self.mainLayout.addWidget(self.maxError_label,12,0)
-        self.mainLayout.addWidget(self.maxError_label,12,1)
+        self.mainLayout.addWidget(self.maxError_field,12,1)
         self.mainLayout.addWidget(self.folderButton,13,0)
         self.mainLayout.addWidget(self.files_label,14,0)
         self.mainLayout.addWidget(self.runButton,15,0)
@@ -187,7 +188,14 @@ class echemvisDialog(QtGui.QMainWindow):
             else:
                 xmlFiles = []
             if self.progModule:
-                errorNum = 0
+                try:
+                    if self.maxError_field.txt
+                    self.maxError = int(self.maxError_field.text)
+                    else:
+                        self.maxError = 10
+                except:
+                    self.maxError = 10
+                
                 jobName = "job" + time.strftime('%Y%m%d%H%M%S',time.gmtime())
                 self.automator = fomautomator.FOMAutomator(self.paths,
                                                            self.versionName,
