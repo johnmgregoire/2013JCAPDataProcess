@@ -12,6 +12,7 @@ import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
 import fomautomator
 from fomautomator import mysql_dbcommlib
+from fomautomator import cPickle as pickle
 import path_helpers
 import itertools
 import time
