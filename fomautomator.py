@@ -203,7 +203,7 @@ class FOMAutomator(object):
                                                  self.lastVersion, self.modname, self.updatemod,
                                                  self.params, self.funcDicts,self.outDir,
                                                  self.rawDataDir)
-                if exitcode:
+                if exitcode.exitSuccess:
                     root.info('File %s completed  %d/%d' %(os.path.basename(filename),i+1,numberOfFiles))
             except Exception as someException:
                 # root.exception will log an ERROR with printed traceback;
@@ -245,7 +245,7 @@ def makeFileRunner(args):
         # returns 1 if file was processed or 0 if file was too short
         exitcode = filerunner.FileRunner(*args)
         # if file was processed, write logging message
-        if exitcode:
+        if exitcode.exitSuccess:
             root.info('File %s completed' %filename)
     except Exception as someException:
         # root.exception will log an ERROR with printed traceback;

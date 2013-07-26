@@ -25,6 +25,7 @@ class FileRunner(object):
                  updatemod, newparams, funcdicts, outDir, rawDataDir):#, vshift):
         self.txtfile = expfile
         # gets the name of the experiment from the file path
+        self.exitSuccess = 0
         self.expfilename = os.path.splitext(os.path.split(self.txtfile)[1])[0]
         self.version = version
         self.outDir = outDir
@@ -80,7 +81,7 @@ class FileRunner(object):
             raise ValueError("Not a valid raw data file (check .txt or .pck file).")
         # skip this file if it has fewer than 100 lines of data
         if self.rawDataLength < 100:
-            return 0
+            return
         # getmembers returns functions in alphabetical order.  We sort these
         #   functions by the line at which they start in the source code so
         #   that they can be run in the correct order.
@@ -96,7 +97,8 @@ class FileRunner(object):
             raise KeyError("Unrecognized experiment type: %s." %expType)
         if not targetFOMs:
             # nothing else to do for this file
-            return 1
+            self.exitSuccess = 1
+            return
         # a list of function objects
         fomFuncs = [func for func in allFuncs if func.func_name in targetFOMs]
         for funcToRun in fomFuncs:
@@ -133,7 +135,7 @@ class FileRunner(object):
         self.stripData()
         self.saveJSON()
         self.saveXML()
-        return 1
+        self.exitSuccess = 1
 
     """ returns the correct value for each keyword argument in the
         fom function definition """
