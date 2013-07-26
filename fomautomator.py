@@ -200,11 +200,6 @@ class FOMAutomator(object):
         eTime = time.time()
         timeStamp = time.strftime('%Y%m%d%H%M%S',time.gmtime())
 
-        root = logging.getLogger()
-        root.setLevel(logging.INFO)
-        processHandler = QueueHandler(loggingQueue)
-        root.addHandler(processHandler)
-
         # clean up the pool
         processPool.close()
         processPool.join()
@@ -229,7 +224,7 @@ class FOMAutomator(object):
                 
     """ runs the files in order on a single process and logs errors """
     def runSequentially(self):
-        # setting up everything needed for logging the errors
+        # set up everything needed for logging the errors
         root = logging.getLogger()
         root.setLevel(logging.INFO)
         statusFileName = path_helpers.createPathWExtention(self.outDir,self.jobname,".run")
@@ -290,16 +285,22 @@ class FOMAutomator(object):
             except:
                 os.rename(statusFileName, path_helpers.createPathWExtention(self.outDir,self.jobname+timeStamp,".done"))
 
-                
+""" This function is started in a separate process by ProcessPool.map.
+    Here, a FileRunner is created and a processHandler is added temporarily
+    to log status or error messages from the FileRunner.  The argument to
+    makeFileRunner is the list of arguments to the FileRunner, but this function
+    is only allowed a single argument because of ProcessPool.map. """
 def makeFileRunner(args):
+    # the multiprocessing queue
     queue = args[0]
     filename = os.path.basename(args[1])
     root = logging.getLogger()
     root.setLevel(logging.INFO)
+    # a logging handler which sends messages to the multiprocessing queue
     processHandler = QueueHandler(queue)
     root.addHandler(processHandler)
     try:
-        # returns 1 if file was processed or 0 if file was too short
+        # exitSuccess is 1 if file was processed or 0 if file was too short
         exitcode = filerunner.FileRunner(*args)
         # if file was processed, write logging message
         if exitcode.exitSuccess:
@@ -311,5 +312,7 @@ def makeFileRunner(args):
         #root.exception(someException)
         exitcode = -1
     finally:
+        # remove handler for this file (because a new handler is created
+        #   for every file)
         root.removeHandler(processHandler)
         return exitcode
