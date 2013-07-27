@@ -130,7 +130,7 @@ def main(argv):
 
         # load parameters from a pickled file
         if args.paramfile:
-            with open(args.paramfile, 'r') as paramfile:
+            with open(args.paramfile[0], 'r') as paramfile:
                 version, fnames, params = pickle.load(paramfile)
             # make sure that the parameters were created for this version
             #   of the functions
