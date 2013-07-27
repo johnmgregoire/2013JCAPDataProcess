@@ -190,13 +190,13 @@ class echemvisDialog(QtGui.QMainWindow):
                 xmlFiles = []
             if self.progModule:
                 try:
-                    if self.maxError_field.txt
-                    self.maxError = int(self.maxError_field.text)
+                    if str(self.maxError_field.text()):
+                        self.maxError = int(str(self.maxError_field.text()))
                     else:
                         self.maxError = 10
                 except:
                     self.maxError = 10
-                
+                    
                 jobName = "job" + time.strftime('%Y%m%d%H%M%S',time.gmtime())
                 self.automator = fomautomator.FOMAutomator(self.paths,
                                                            self.versionName,
@@ -206,7 +206,7 @@ class echemvisDialog(QtGui.QMainWindow):
                                                            self.exptypes,
                                                            self.srcDir, self.outDir,
                                                            self.rawPCKDir,
-                                                           errorNum,jobName)
+                                                           self.maxError,jobName)
 
                 
                 params = self.getParams(default=self.defaultButton.isChecked())
@@ -401,14 +401,10 @@ class echemvisDialog(QtGui.QMainWindow):
                 return None
             funcs_ans += ans
 
-<<<<<<< HEAD
-=======
         with open(os.path.join(self.outDir, 'params.pck'), 'w') as paramfile:
             pickle.dump((self.versionName, funcs_names,
                          [list(a) for a in zip(funcs_params, funcs_ans)]),
                         paramfile)
-
->>>>>>> b9330ab4bd36901e9e190ac93336476c8bf68eaa
         return funcs_names,[list(a) for a in zip(funcs_params,funcs_ans)]
 
     
