@@ -99,6 +99,8 @@ def calccurvregions(rawd, interd, SGpts=10, critfracposcurve=.95, curvetol=3.e-5
         zinds=arrayzeroind1d(arr, postoneg=True, negtopos=False)
         zinds.sort()
         zinds=numpy.array(zinds, dtype='int32')
+        # MATH ERROR: in some files, this is never positive - raises an index error
+        #   example file: 632-1-325-247216-20130610112549939PDT
         posarr=arr>=0
         starti=numpy.where(posarr)[0][0]
         if len(zinds)==0 and numpy.all(posarr):
@@ -106,6 +108,7 @@ def calccurvregions(rawd, interd, SGpts=10, critfracposcurve=.95, curvetol=3.e-5
         else:
             if len(zinds)==0:
                 zinds=numpy.array([len(arr)])
+            # MATH ERROR: tries to divide by zero
             cutoffinds=[zi for zi in zinds if (posarr[starti:zi].sum(dtype='float32'))/(zi-starti)
                         > critfracposcurve]
             if len(cutoffinds)==0:
@@ -229,6 +232,7 @@ def SegdtSG(rawd, interd, SGpts=10, order=1, k='I(A)', dxk='dt'):
 
 def calcLinSub(rawd, interd, var='I(A)', dydev_frac=0.02, dydev_nout=10, dydev_abs=0.5e-5,
                Vsegrange=0.1, minslope=-1e-6):
+    # MATH ERROR: ends up being zero for all files
     dn_segstart=3*dydev_nout
     dx = interd['dt']
     if var in rawd:
