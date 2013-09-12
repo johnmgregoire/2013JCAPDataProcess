@@ -1,0 +1,27 @@
+﻿CV:
+I(A)_Min
+I(A)_LinSub_Max
+I(A)_LinSub_max_IllDiff
+I(A)_E_IThresh
+I(A)_LinSub_EatIThresh
+I(A)_min_IllDiff
+I(A)_max_IllDiff
+I(A)_Max
+I(A)_LinSub_Min
+I(A)_LinSub_min_IllDiff
+TafelFitVRange
+TafelSlope
+TafelLogIex
+TafelEstart
+
+CP and OCV:
+Ewe(V)_Final
+Ewe(V)_Avg
+Ewe(V)_ArrSS
+Ewe(V)_avg_IllDiff
+
+CA:
+I(A)_Final
+I(A)_Avg
+I(A)_ArrSS
+I(A)_avg_IllDiff
