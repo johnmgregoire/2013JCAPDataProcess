@@ -67,7 +67,7 @@ def main(argv):
     # through the GUI when we do the database connection. it gets the experiement
     # types in a short list for all the paths -- this allowss us to get the params.
     # If unsure, always set to empty list.
-    exptypes = []
+    technique_names = []
 
     if not (args.inputfolder or args.inputfile or args.fileofinputs):
         parser.error('Cannot proceed further as no form of input was specified\
@@ -125,7 +125,7 @@ def main(argv):
         
     if paths:
         automator = fomautomator.FOMAutomator(paths, versionName,prevVersion,\
-                                              progModule,updateModule,exptypes,\
+                                              progModule,updateModule,technique_names,\
                                               srcDir,dstDir,rawDataDir,max_errors,jobname)
 
         # load parameters from a pickled file

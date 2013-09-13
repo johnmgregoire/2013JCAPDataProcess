@@ -1,5 +1,5 @@
 from lxml import etree
-import numpy
+import numpy, datetime
 import ctypes, struct, base64
 import os.path, ast, distutils.util
 
@@ -7,33 +7,42 @@ DTD_DIR = os.path.normpath(os.path.expanduser("~/Documents/GitHub/JCAPDataProces
 
 def toXML(filepath, verNum, dictTup):
     root = etree.Element("data", version=verNum)
-    foms = etree.SubElement(root, "figures_of_merit")
-    intermeds = etree.SubElement(root, "intermediate_values")
+    info = etree.SubElement(root, "measurement_info")
+    foms = etree.SubElement(root, "fom")
+    raws = etree.SubElement(root, "raw_arrays")
+    intermeds = etree.SubElement(root, "intermediate_arrays")
     params = etree.SubElement(root, "function_parameters")
     for datadict, node in zip(dictTup,
-                              (foms, intermeds, params)):
+                              (info, foms, raws, intermeds, params)):
         for figname in datadict.keys():
             fignode = etree.SubElement(node, "figure", name=figname)
             val = datadict[figname]
-            valtype, encoding, size = getPrimitiveType(val)
-            if isinstance(val, numpy.ndarray):
-                #hexstr = ''
-                #for item in val:
-                #    hexstr += struct.pack(encoding, numpy.asscalar(item))
-                arrencode = encoding[0]+str(len(val))+encoding[1:]
-                hexstr = struct.pack(arrencode, *val.tolist())
-                fignode.set("array_length", str(len(val)))
-            elif isinstance(val, list):
-                arrencode = encoding[0]+str(len(val))+encoding[1:]
-                hexstr = struct.pack(arrencode, *val)
-                fignode.set("array_length", str(len(val)))
-            elif isinstance(val, numpy.generic):
-                hexstr = struct.pack(encoding, numpy.asscalar(val))
+            if isinstance(val, datetime.datetime):
+                val=str(val)
+            if isinstance(val, str):
+                fignode.text = unicode(val,'UTF-8')
+                fignode.set("type", 'str')   # or the standard way of specifying a string in Python
+                fignode.set("bits", `len(val)*8`)
             else:
-                hexstr = struct.pack(encoding, val)
-            fignode.text = base64.b64encode(hexstr)
-            fignode.set("type", valtype)
-            fignode.set("bits", size)
+                valtype, encoding, size = getPrimitiveType(val)
+                if isinstance(val, numpy.ndarray):
+                    #hexstr = ''
+                    #for item in val:
+                    #    hexstr += struct.pack(encoding, numpy.asscalar(item))
+                    arrencode = encoding[0]+str(len(val))+encoding[1:]
+                    hexstr = struct.pack(arrencode, *val.tolist())
+                    fignode.set("array_length", str(len(val)))
+                elif isinstance(val, list):
+                    arrencode = encoding[0]+str(len(val))+encoding[1:]
+                    hexstr = struct.pack(arrencode, *val)
+                    fignode.set("array_length", str(len(val)))
+                elif isinstance(val, numpy.generic):
+                    hexstr = struct.pack(encoding, numpy.asscalar(val))
+                else:
+                    hexstr = struct.pack(encoding, val)
+                fignode.text = base64.b64encode(hexstr)
+                fignode.set("type", valtype)
+                fignode.set("bits", size)
     xmlHeader = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE data SYSTEM "fomdata.dtd">
 """
@@ -67,7 +76,9 @@ def getPrimitiveType(obj):
 def getDataFromXML(filepath):
     dtypes = {"float": (float, '<f'), "int": (int, '<i'),
               "bool": (bool, '<?')}
+    infoDict = {}
     fomDict = {}
+    rawDict = {}
     intermedDict = {}
     paramDict = {}
     with open(filepath, 'rb') as xmlfile:
@@ -80,24 +91,29 @@ def getDataFromXML(filepath):
         raise SyntaxError("%s is not a valid XML data file."
                           %os.path.basename(filepath))
     version = docTree.getroot().get("version")
-    fomTree = docTree.find("figures_of_merit")
-    intermedTree = docTree.find("intermediate_values")
+    infoTree = docTree.find("measurement_info")
+    fomTree = docTree.find("fom")
+    rawTree = docTree.find("raw_arrays")
+    intermedTree = docTree.find("intermediate_arrays")
     paramTree = docTree.find("function_parameters")
-    for node, datadict in zip((fomTree, intermedTree, paramTree),
-                              (fomDict, intermedDict, paramDict)):
+    for node, datadict in zip((infoTree, fomTree, rawTree, intermedTree, paramTree),
+                              (infoDict, fomDict, rawDict, intermedDict, paramDict)):
         for fig in node.iter("figure"):
             figtype = fig.get("type")
-            dtypeFunc, encoding = dtypes.get(figtype)
-            figlen = fig.get("array_length")
-            if figlen:
-                encoding = encoding[0]+figlen+encoding[1:]
-            figtup = struct.unpack(encoding, base64.b64decode(fig.text))
-            if len(figtup) > 1:
-                figval = map(dtypeFunc, list(figtup))
+            if str(figtype)=='str':
+                figval=str(fig.text)
             else:
-                figval = dtypeFunc(figtup[0])
+                dtypeFunc, encoding = dtypes.get(figtype)
+                figlen = fig.get("array_length")
+                if figlen:
+                    encoding = encoding[0]+figlen+encoding[1:]
+                figtup = struct.unpack(encoding, base64.b64decode(fig.text))
+                if len(figtup) > 1:
+                    figval = map(dtypeFunc, list(figtup))
+                else:
+                    figval = dtypeFunc(figtup[0])
             datadict[fig.get("name")] = figval
-    return (version, fomDict, intermedDict, paramDict)
+    return (version, infoDict, fomDict, rawDict, intermedDict, paramDict)
 
 ### NOTE: There's a loss of precision in converting floats to strings
 ###   and back to floats.  It might be reasonable to pickle the intermediate

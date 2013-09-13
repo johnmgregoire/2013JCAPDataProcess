@@ -37,7 +37,7 @@ class echemvisDialog(QtGui.QMainWindow):
         self.progModule = None
         self.updateModule = None
         self.maxError = 30
-        self.exptypes = []
+        self.technique_names = []
         self.initDB()
         self.initUI()
 
@@ -203,7 +203,7 @@ class echemvisDialog(QtGui.QMainWindow):
                                                            self.prevVersion,
                                                            self.progModule,
                                                            self.updateModule,
-                                                           self.exptypes,
+                                                           self.technique_names,
                                                            self.srcDir, self.outDir,
                                                            self.rawPCKDir,
                                                            self.maxError,jobName)
@@ -313,13 +313,13 @@ class echemvisDialog(QtGui.QMainWindow):
         idialog.exec_()
         exsetinds=idialog.selectinds
         self.selectexids=[exset[i] for i in exsetinds]
-        exptypelist = [ex_trange_techl[i][2] for i in exsetinds]
-        self.exptypes = []
-        for tech in itertools.chain(*exptypelist):
+        technique_namelist = [ex_trange_techl[i][2] for i in exsetinds]
+        self.technique_names = []
+        for tech in itertools.chain(*technique_namelist):
             techname = re.sub('\d+', '', tech).rstrip()
-            if techname not in self.exptypes:
-                self.exptypes.append(techname)
-        print self.exptypes
+            if techname not in self.technique_names:
+                self.technique_names.append(techname)
+        print self.technique_names
 
     def selectProgram(self):
         self.programDialog = QtGui.QFileDialog(self,

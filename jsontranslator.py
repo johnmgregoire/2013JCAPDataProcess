@@ -9,6 +9,7 @@ import os
 import csv
 import json
 import numpy
+import datetime
 
 #SAVEPATH = os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisJSON")
 
@@ -24,11 +25,12 @@ import numpy
 
 def toJSON(savepath, version, dataTup):
     with open(savepath, 'w') as fileObj:
-        listOfObjs = [version]
-        for dataDict in dataTup:
-            listOfObjs.append(convertNpTypes(dataDict))
-        json.dump(listOfObjs, fileObj)
-    return listOfObjs
+        ObjDict['version']=version
+        for k, dataDict in zip(["measurement_info", "fom", "raw_arrays", "intermediate_arrays", "function_parameters"], dataTup):
+            ObjDict[k]=convertNpTypes(dataDict)
+        json.dump(ObjDict, fileObj)
+    return ObjDict
+
 
 ##def fromJSON(filepath):
 ##    with open(filepath, 'r') as fileObj:
@@ -38,9 +40,8 @@ def toJSON(savepath, version, dataTup):
 
 def getDataFromJSON(filepath):
     with open(filepath, 'r') as fileObj:
-        version, fomDict, intermedDict, paramDict = json.load(fileObj,
-                                                              object_hook=unicodeToString)
-    return (version, fomDict, intermedDict, paramDict)
+        jsonDict = json.load(fileObj, object_hook=unicodeToString)
+    return jsonDict
 
 def convertNpTypes(container):
     if isinstance(container, dict):
@@ -50,6 +51,8 @@ def convertNpTypes(container):
                 val = numpy.asscalar(val)
             elif isinstance(val, numpy.ndarray):
                 val = convertNpTypes(list(val))
+            elif isinstance(val, datetime.datetime):
+                val=str(val)
             pydict[key] = val
         return pydict
     elif isinstance(container, list):
@@ -86,14 +89,14 @@ def unicodeToString(container):
                 container[i] = unicodeToString(val)
         return container
 
-def getFOMs(filename):
-    dataTup = fromJSON(filename)
-    fomdict = dataTup[0]
-    idval = filename.split('_')[0]
-    with open(filename+'.txt', 'wb') as fileToDB:
-        fomwriter = csv.writer(fileToDB)
-        rowToWrite = [idval]
-        for fom in fomdict:
-            rowToWrite.append(str(fom)+': '+str(fomdict.get(fom)))
-        fomwriter.writerow(rowToWrite)
-    print rowToWrite
+#def getFOMs(filename):
+#    dataTup = fromJSON(filename)
+#    fomdict = dataTup[0]
+#    idval = filename.split('_')[0]
+#    with open(filename+'.txt', 'wb') as fileToDB:
+#        fomwriter = csv.writer(fileToDB)
+#        rowToWrite = [idval]
+#        for fom in fomdict:
+#            rowToWrite.append(str(fom)+': '+str(fomdict.get(fom)))
+#        fomwriter.writerow(rowToWrite)
+#    print rowToWrite

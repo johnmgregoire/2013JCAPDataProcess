@@ -11,17 +11,12 @@
 
 import sys, os
 
-# append the DBComm library to the program's list of libraries to check
-#   for modules to import (needed for mysql_dbcommlib)
-sys.path.append(os.path.expanduser("~/Documents/GitHub/JCAPPyDBComm"))
-
 import argparse
 import cPickle as pickle
 from multiprocessing import Process, Pool, Manager
 from inspect import *
 from rawdataparser import RAW_DATA_PATH
 from qhtest import * # this also imports queue
-import mysql_dbcommlib
 import jsontranslator
 import xmltranslator
 import importlib
@@ -31,7 +26,7 @@ import fomautomator_helpers
 import filerunner
 import time
 import datetime
-
+from infodbcomm import infoDictfromDB
 # the directory where the versions of the fomfunctions are
 FUNC_DIR = os.path.normpath(os.path.expanduser("~/Desktop/Working Folder/AutoAnalysisFunctions"))
 MOD_NAME = 'fomfunctions'
@@ -54,7 +49,7 @@ class FOMAutomator(object):
     
     """ initializes the automator with all necessary information """
     def __init__(self, rawDataFiles, versionName, prevVersion,funcModule,
-                 updateModule, expTypes, srcDir, dstDir, rawDataDir,errorNum,jobname):
+                 updateModule, technique_names, srcDir, dstDir, rawDataDir,errorNum,jobname):
         # initializing all the basic info
         self.version = versionName
         self.lastVersion = prevVersion
@@ -63,7 +58,7 @@ class FOMAutomator(object):
         self.funcMod = __import__(funcModule)
         self.modname = funcModule
         self.updatemod = updateModule
-        self.expTypes = expTypes
+        self.technique_names = technique_names
         self.srcDir = srcDir
         self.dstDir = dstDir
         self.rawDataDir = rawDataDir
@@ -71,13 +66,8 @@ class FOMAutomator(object):
         self.errorNum = errorNum
         self.jobname = jobname
         self.files = rawDataFiles
-## ---- VSHIFT --------------------------------------------------------       
-##        # use self.files to get a list of the corresponding vshifts
-##        #   from the database
-##        self.vshiftList = <list of vshifts>
-##        # this can be done with the experiment types for each file
-##        #   as well
-## --------------------------------------------------------------------
+        self.infoDicts=infoDictfromDB(self.files) # required to have keys 'reference_Eo' and 'technique_name'
+
         self.processFuncs()
 
     """ returns a dictionary with all of the parameters and batch variables
@@ -88,8 +78,8 @@ class FOMAutomator(object):
         self.allFuncs = []
 
         # if we have the type of experiment, we can just get the specific functions
-        if self.expTypes:         
-            for tech in self.expTypes:
+        if self.technique_names:         
+            for tech in self.technique_names:
                 techDict = self.funcMod.EXPERIMENT_FUNCTIONS.get(tech)
                 if techDict:
                     [self.allFuncs.append(func) for func in techDict
@@ -186,18 +176,16 @@ class FOMAutomator(object):
         bTime = time.time()
         
         # the jobs to process each of the files
-        jobs = [(loggingQueue, filename, self.version, self.lastVersion,
-                 self.modname, self.updatemod,self.params, self.funcDicts,
-                 self.srcDir, self.dstDir, self.rawDataDir)
-                for filename in self.files]
+#        jobs = [(loggingQueue, filename, self.version, self.lastVersion,
+#                 self.modname, self.updatemod,self.params, self.funcDicts,
+#                 self.srcDir, self.dstDir, self.rawDataDir)
+#                for filename in self.files]
 
-## ---- VSHIFT ----------------------------------------------------------------       
-##        # replace the previous block with the following:
-##        jobs = [(loggingQueue, filename, self.version, self.lastVersion,
-##                 self.modname, self.updatemod, self.params, self.funcDicts,
-##                 self.srcDir, self.dstDir, self.rawDataDir, vshift) for (filename, vshift)
-##                in zip(self.files, self.vshiftList)]
-## ----------------------------------------------------------------------------      
+        jobs = [(loggingQueue, filename, self.version, self.lastVersion,
+                 self.modname, self.updatemod, self.params, self.funcDicts,
+                 self.srcDir, self.dstDir, self.rawDataDir, infodict['reference_Eo'], infodict['technique_name']) \
+                 for (filename, infodict)
+                in zip(self.files, self.infoDicts)]  
         
         processPool.map(makeFileRunner, jobs)
         # keep track of when processing ended
@@ -244,11 +232,7 @@ class FOMAutomator(object):
         
         # The file processing occurs here
         logQueue = None
-        for i, filename in enumerate(self.files):
-## ---- VSHIFT --------------------------------------------------------------------           
-##        # replace the line above with this:
-##        for i, (filename, vshift) in enumerate(zip(self.files, self.vshiftList)):
-## --------------------------------------------------------------------------------           
+        for i, (filename, infodict) in enumerate(zip(self.files, self.infoDicts)):       
             if numberOfErrors > self.errorNum:
                 root.info("The job encountered %d errors and the max number of them allowed is %d" %(numberOfErrors,self.errorNum))
                 break
@@ -257,9 +241,8 @@ class FOMAutomator(object):
                 exitcode = filerunner.FileRunner(logQueue,filename, self.version,
                                                  self.lastVersion, self.modname, self.updatemod,
                                                  self.params, self.funcDicts,self.srcDir,
-## ---- VSHIFT -----------------------------------------------------------------
-                                                 self.dstDir, self.rawDataDir)#, vshift)
-## -----------------------------------------------------------------------------
+                                                 self.dstDir, self.rawDataDir, infodict['reference_Eo'], infodict['technique_name'])
+
                 if exitcode.exitSuccess:
                     root.info('File %s completed  %d/%d' %(os.path.basename(filename),i+1,numberOfFiles))
             except Exception as someException:

@@ -16,10 +16,10 @@ EXPERIMENT_FUNCTIONS = {'CV': {'TafelSlopeVPerDec': [], 'TafelEstart': [],
                                'EatIThresh': [['I(A)'], ['I(A)_LinSub']],
                                'IllDiff': [['I(A)', 'max'], ['I(A)', 'min'],
                                  ['I(A)_LinSub', 'max'], ['I(A)_LinSub', 'min']]},
-              'OCV': {'Final': [['Ewe(V)']], 'Avg': [['Ewe(V)']],
-                      'ArrSS': [['Ewe(V)']], 'IllDiff': [['Ewe(V)', 'avg']]},
-              'CP': {'Final': [['Ewe(V)']], 'Avg': [['Ewe(V)']],
-                     'ArrSS': [['Ewe(V)']], 'IllDiff': [['Ewe(V)', 'avg']]},
+              'OCV': {'Final': [['Ewe(V)_E0']], 'Avg': [['Ewe(V)_E0']],
+                      'ArrSS': [['Ewe(V)_E0']], 'IllDiff': [['Ewe(V)_E0', 'avg']]},
+              'CP': {'Final': [['Ewe(V)_E0']], 'Avg': [['Ewe(V)_E0']],
+                     'ArrSS': [['Ewe(V)_E0']], 'IllDiff': [['Ewe(V)_E0', 'avg']]},
               'CA': {'Final': [['I(A)']], 'Avg': [['I(A)']],
                      'ArrSS': [['I(A)']], 'IllDiff': [['I(A)', 'avg']]}}
 
@@ -40,10 +40,10 @@ zero_thresh = 5.e-8 # threshold below which measured value is equivalent to zero
     critsegVend = 0.36
     SGpts = 10 (nptsoneside for Savitzy-Golay smoothing)
 """
-def TafelSlopeVPerDec(rawd, interd, var='I(A)', vshift=-(.187-0.045), boolDevFrac=0.5, boolDevNOut=3,
+def TafelSlopeVPerDec(rawd, interd, var='I(A)', vk='Ewe(V)_E0', boolDevFrac=0.5, boolDevNOut=3,
                       dyDevFrac=0.2, dyDevNOut=5, dyDevAbs = 0.,
                       dx=1., maxFracOutliers=0.5, critSegVRange=0.04, critSegIEnd=3.e-5,
-                      critSegVEnd=0.36, SavGolPts=10):
+                      critSegVEnd=0.36, SavGolPts=10, inverty=False):
     # initialize the arrays to hold Tafel values (considered both
     #   intermediate data and figures of merit)
     interd['TafelSlope'] = []
@@ -53,19 +53,30 @@ def TafelSlopeVPerDec(rawd, interd, var='I(A)', vshift=-(.187-0.045), boolDevFra
     booldn_segstart = 3 * boolDevNOut
     dn_segstart = 3 * dyDevNOut
     inter.calcsegind(rawd, interd, SGpts=SavGolPts) # breaks experiment into segments
-    inter.calccurvregions(rawd, interd, SGpts=SavGolPts) # runs on all segments
-    linsub =  inter.calcLinSub(rawd, interd, var=var) # returns 1 if successful, 0 if not
+    inter.calccurvregions(rawd, interd, SGpts=SavGolPts, inverty=inverty) # runs on all segments
+    linsub =  inter.calcLinSub(rawd, interd, var=var, inverty=inverty) # returns 1 if successful, 0 if not
+    if inverty:
+        yinv=-1.
+    else:
+        yinv=1.
     if not linsub:
-        interd['TafelSlope'] = float('nan')
-        interd['TafelEstart'] = float('nan')
-        interd['TafelFitErange'] = float('nan')
-        interd['TafelLogIex'] = float('nan')
+        nanlist=[float('nan')]*len(interd['segprops_dlist'])
+        interd['TafelSlope'] = nanlist
+        interd['TafelEstart'] = nanlist
+        interd['TafelFitErange'] = nanlist
+        interd['TafelLogIex'] = nanlist
         return float('nan')
     inter.SegSG(rawd, interd, SGpts=SGpts, order=1, k=var+'_LinSub')
     for seg in range(len(interd['segprops_dlist'])):
         inds=interd['segprops_dlist'][seg]['inds']
-        i=interd['I(A)_LinSub_SG'][inds]
-        v=rawd['Ewe(V)'][inds]+vshift
+        i=interd['I(A)_LinSub_SG'][inds]*yinv
+#        if i.sum()==0.:#LinSub attempted on all segments, here each segment is tried until 1 works
+#            continue
+        if vk in rawd.keys():
+            v = rawd[vk]
+        else:
+            v = interd[vk]
+        v=v[inds]
         posinds=numpy.where(i>zero_thresh)
         invboolarr=numpy.float32(i<=zero_thresh)
         istart_segs, len_segs, fitdy_segs, fitinterc_segs=inter.findzerosegs(
@@ -145,24 +156,40 @@ def TafelSlopeVPerDec(rawd, interd, var='I(A)', vshift=-(.187-0.045), boolDevFra
         interd['segprops_dlist'][seg]['TafelInds']=inds[taffitinds][tafinds]
         
     #FOMs (the entire list):
-    return interd['TafelSlope']
+    fomarr=numpy.array(interd['TafelSlope']) #in interd there is a fom for each segment but save the first not NaN one as scalar FOM
+    goodinds=numpy.where(numpy.logical_not(numpy.isnan(fomarr)))[0]
+    if len(goodinds)==0:
+        return float('nan')
+    return fomarr[goodinds[0]]
 
 def TafelEstart(rawd, interd):
-    return interd['TafelEstart']
+    fomarr=numpy.array(interd['TafelEstart'])
+    goodinds=numpy.where(numpy.logical_not(numpy.isnan(fomarr)))[0]
+    if len(goodinds)==0:
+        return float('nan')
+    return fomarr[goodinds[0]]
 
 def TafelFitVRange(rawd, interd):
-    return interd['TafelFitVrange']
+    fomarr=numpy.array(interd['TafelFitVrange'])
+    goodinds=numpy.where(numpy.logical_not(numpy.isnan(fomarr)))[0]
+    if len(goodinds)==0:
+        return float('nan')
+    return fomarr[goodinds[0]]
 
 def TafelLogIex(rawd, interd):
-    return interd['TafelLogIex']
+    fomarr=numpy.array(interd['TafelLogIex'])
+    goodinds=numpy.where(numpy.logical_not(numpy.isnan(fomarr)))[0]
+    if len(goodinds)==0:
+        return float('nan')
+    return fomarr[goodinds[0]]
     
 
-def ArrSS(rawd, interd, x=['Ewe(V)', 'I(A)', 'I(A)_LinSub'],
+def ArrSS(rawd, interd, x=['Ewe(V)_E0', 'I(A)', 'I(A)_LinSub'],
           weightExp=1., numTestPts=10):
-    if x == 'I(A)_LinSub':
-        x = interd[x]
-    else:
+    if x in rawd.keys():
         x = rawd[x]
+    else:
+        x = interd[x]
     i=numTestPts
     s0=x[:i].std()/i**weightExp+1
     while x[:i].std()/i**weightExp<s0 and i<len(x):
@@ -170,13 +197,16 @@ def ArrSS(rawd, interd, x=['Ewe(V)', 'I(A)', 'I(A)_LinSub'],
         i+=numTestPts
     return x[:i].mean()
 
-def EatIThresh(rawd, interd, i=['I(A)', 'I(A)_LinSub'], v='Ewe(V)', iThresh=1e-5,
-              numConsecPts=20, setAbove=1, noThresh=1.):
+def EatIThresh(rawd, interd, i=['I(A)', 'I(A)_LinSub'], v='Ewe(V)_E0', iThresh=1e-5,
+              numConsecPts=20, setAbove=1, noThresh=numpy.nan):
     if i == 'I(A)_LinSub':
         i = interd[i]
     else:
         i = rawd[i]
-    v = rawd[v]
+    if v in rawd.keys():
+        v = rawd[v]
+    else:
+        v = interd[v]
     if not setAbove: # 0 for below, 1 for above
         i *= -1
         iThresh *= -1
@@ -190,12 +220,12 @@ def EatIThresh(rawd, interd, i=['I(A)', 'I(A)_LinSub'], v='Ewe(V)', iThresh=1e-5
         # return value indicating threshold not reached
         return noThresh
 
-def Avg(rawd, interd, x=['Ewe(V)', 'I(A)', 'I(A)_LinSub'], t='t(s)', interval=1000,
+def Avg(rawd, interd, x=['Ewe(V)_E0', 'I(A)', 'I(A)_LinSub'], t='t(s)', interval=1000,
         numStdDevs=2., numPts=1000, startAtEnd=0):
-    if x == 'I(A)_LinSub':
-        x = interd[x]
-    else:
+    if x in rawd.keys():
         x = rawd[x]
+    else:
+        x = interd[x]
     t = rawd[t]
     # if we wish to start at the end, reverse the lists
     if startAtEnd:
@@ -208,34 +238,34 @@ def Avg(rawd, interd, x=['Ewe(V)', 'I(A)', 'I(A)_LinSub'], t='t(s)', interval=10
     # the mean of the data now that outliers have been removed
     return x.mean()
 
-def Final(rawd, interd, x=['Ewe(V)', 'I(A)', 'I(A)_LinSub']):
-    if x == 'I(A)_LinSub':
-        x = interd[x]
-    else:
+def Final(rawd, interd, x=['Ewe(V)_E0', 'I(A)', 'I(A)_LinSub']):
+    if x in rawd.keys():
         x = rawd[x]
+    else:
+        x = interd[x]
     return x[-1]
     
-def Max(rawd, interd, x=['Ewe(V)', 'I(A)', 'I(A)_LinSub']):
-    if x == 'I(A)_LinSub':
-        x = interd[x]
-    else:
+def Max(rawd, interd, x=['Ewe(V)_E0', 'I(A)', 'I(A)_LinSub']):
+    if x in rawd.keys():
         x = rawd[x]
+    else:
+        x = interd[x]
     return numpy.max(x)
 
-def Min(rawd, interd, x=['Ewe(V)', 'I(A)', 'I(A)_LinSub']):
-    if x == 'I(A)_LinSub':
-        x = interd[x]
-    else:
+def Min(rawd, interd, x=['Ewe(V)_E0', 'I(A)', 'I(A)_LinSub']):
+    if x in rawd.keys():
         x = rawd[x]
+    else:
+        x = interd[x]
     return numpy.min(x)
 
-def IllDiff(rawd, interd, illum='Illum', thisvar=['Ewe(V)', 'I(A)', 'I(A)_LinSub'],
+def IllDiff(rawd, interd, illum='Illum', thisvar=['Ewe(V)_E0', 'I(A)', 'I(A)_LinSub'],
                 othervar='I(A)', t='t(s)', fomName=['min', 'max', 'avg'],
                 lightStart=0.4, lightEnd=0.95, darkStart =0.4, darkEnd=0.95,
                 illSigKey='Ach(V)', sigTimeShift=0., illThresh=0.8,
                 illInvert=1):
-    if (thisvar == 'I(A)' or thisvar == 'I(A)_LinSub'):
-        othervar = 'Ewe(V)'
+    if thisvar.startswith('I(A)'):
+        othervar = 'Ewe(V)_E0'
     if sigTimeShift:
         # add intermediate value 'IllumMod'
         interd['IllumMod']=inter.illumtimeshift(rawd, illSigKey, t, sigTimeShift)

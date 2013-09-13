@@ -6,6 +6,7 @@
 # first version of helper/intermediate data functions for automated
 #   data processing
 
+RAISEERRORS=True
 import numpy
 
 """ Calculates the average time step between data measurements during
@@ -49,6 +50,7 @@ def savgolsmooth(x, nptsoneside=7, order = 4, dx=1.0, deriv=0, binprior=0):
 def calcsegind(rawd, interd, SGpts=10):
     if not 'dt' in interd.keys():
         calcmeandt(rawd, interd)
+    # when chaning to _E0, thsis was not changed because it uses derivatives
     interd['Ewe(V)_dtSG']=savgolsmooth(rawd['Ewe(V)'], nptsoneside=SGpts, order = 1, dx=interd['dt'], deriv=1, binprior=0)
     rising=interd['Ewe(V)_dtSG']>=0
     interd['segind']=numpy.empty(len(rising), dtype='uint16')
@@ -79,9 +81,13 @@ def arrayzeroind1d(arr, postoneg=False, negtopos=True):
     #returns array of the floating point "index" linear interpolation between 2 indices
     return (1.0*zeroind*arr[(zeroind+1,)]-(zeroind+1)*arr[(zeroind,)])/(arr[(zeroind+1,)]-arr[(zeroind,)])
 
-def calccurvregions(rawd, interd, SGpts=10, critfracposcurve=.95, curvetol=3.e-5):
+def calccurvregions(rawd, interd, SGpts=10, critfracposcurve=.95, curvetol=3.e-5, inverty=False):
     interd['I(A)_dtdtSG']=numpy.empty(rawd['I(A)'].shape, dtype='float32')
     interd['I(A)_dtSG']=numpy.empty(rawd['I(A)'].shape, dtype='float32')
+    if inverty:
+        yinv=-1.
+    else:
+        yinv=1.
     for segd in interd['segprops_dlist']:
         inds=segd['inds']
         interd['I(A)_dtSG'][inds]=numpy.float32(
@@ -92,9 +98,9 @@ def calccurvregions(rawd, interd, SGpts=10, critfracposcurve=.95, curvetol=3.e-5
         startatend=segd['rising']       
         
         if startatend:
-            arr=interd['I(A)_dtdtSG'][inds][::-1]
+            arr=interd['I(A)_dtdtSG'][inds][::-1]*yinv
         else:
-            arr=interd['I(A)_dtdtSG'][inds]
+            arr=interd['I(A)_dtdtSG'][inds]*yinv
         arr+=curvetol #curve to line?
         zinds=arrayzeroind1d(arr, postoneg=True, negtopos=False)
         zinds.sort()
@@ -121,7 +127,7 @@ def calccurvregions(rawd, interd, SGpts=10, critfracposcurve=.95, curvetol=3.e-5
             segd['anreginds']=inds[::-1][starti:cutoffind][::-1]
         else:
             segd['anreginds']=inds[starti:cutoffind]
-        segd['poscurveinds']=segd['anreginds'][interd['I(A)_dtdtSG'][segd['anreginds']]>0]
+        segd['poscurveinds']=segd['anreginds'][(interd['I(A)_dtdtSG']*yinv)[segd['anreginds']]>0]
 
 def findlinearsegs(y, dydev_frac,  dydev_nout, dn_segstart,  SGnpts=10, dx=1., dydev_abs=0.,
                    maxfracoutliers=.5, critdy_fracmaxdy=None, critdy_abs=None, npts_SGconstdy=2):
@@ -231,7 +237,7 @@ def SegdtSG(rawd, interd, SGpts=10, order=1, k='I(A)', dxk='dt'):
     return
 
 def calcLinSub(rawd, interd, var='I(A)', dydev_frac=0.02, dydev_nout=10, dydev_abs=0.5e-5,
-               Vsegrange=0.1, minslope=-1e-6):
+               Vsegrange=0.1, minslope=-1e-6, vk='Ewe(V)_E0', inverty=False):
     # MATH ERROR: ends up being zero for all files
     dn_segstart=3*dydev_nout
     dx = interd['dt']
@@ -239,17 +245,25 @@ def calcLinSub(rawd, interd, var='I(A)', dydev_frac=0.02, dydev_nout=10, dydev_a
         data = rawd[var]
     else:
         data = interd[var]
+    if vk in rawd:
+        v = rawd[vk]
+    else:
+        v = interd[vk]
+    if inverty:
+        yinv=-1.
+    else:
+        yinv=1.
     interd[var+'_LinSub']=numpy.zeros(data.shape, dtype='float32')
-    for segd in interd['segprops_dlist']:
+    for segd in interd['segprops_dlist']: # will try to calculatye Linsub on all segments
         try:
-            y=data[segd['inds']]
+            y=data[segd['inds']]*yinv
             istart_segs, len_segs, fitdy_segs, fitinterc_segs, dy = findlinearsegs(
                 y, dydev_frac,  dydev_nout, dn_segstart, dydev_abs=dydev_abs, dx=dx, critdy_fracmaxdy=None)
 
             if len(istart_segs)==0:
                 # no linear segments within this segment
                 continue
-            v0v1=numpy.array([rawd['Ewe(V)'][segd['inds']][i0:i0+l][[0, -1]] for i0, l in zip(istart_segs, len_segs)])
+            v0v1=numpy.array([v[segd['inds']][i0:i0+l][[0, -1]] for i0, l in zip(istart_segs, len_segs)])
             dE_segs=v0v1[:, 1]-v0v1[:, 0]
             segi=numpy.where(((dE_segs)>Vsegrange)&(fitdy_segs>minslope))[0]
             if len(segi)>0:
@@ -260,29 +274,33 @@ def calcLinSub(rawd, interd, var='I(A)', dydev_frac=0.02, dydev_nout=10, dydev_a
             dysel=fitdy_segs[seli]
             intsel=fitinterc_segs[seli]
             ylin=intsel+dysel*numpy.arange(len(y))*dx
+            #by default the voltage data is 'Ewe(V)_E0' so the Intercept and any other voltage units are wrt E0
             interd['SegIndStart_LinSub']=istart_segs[seli]
             interd['LinLen_LinSub']=len_segs[seli]
             interd['Intercept_LinSub']=intsel
-            interd['dIdt_LinSub']=dysel
-            interd[var+'_LinSub'][segd['inds']]=numpy.float32(y-ylin)
+            interd['dIdt_LinSub']=dysel*yinv
+            interd[var+'_LinSub'][segd['inds']]=numpy.float32(y-ylin)*yinv
             return 1
         except:
+            if RAISEERRORS:
+                raise 
             return 0
 
-    dIdEcrit=.0005
-    SegdtSG(dlist, SGpts=10, order=1, k='I(A)_LinSub', dxk='dE')
-    if not 'I(A)_LinSub_dtSG' in interd.keys():
-        return
-    for segd in d['segprops_dlist'][:1]: #only 0 and 1 again?
-        y=interd['I(A)_LinSub_dtSG'][segd['inds']]
-        x=interd['Ewe(V)_SG'][segd['inds']]
-        starti=numpy.where(y<dIdEcrit)[0][-1]+1
-        if starti<len(y):
-            interd['dIdE_aveabovecrit']=y[starti:].mean()
-            interd['E_dIdEcrit']=x[starti]
-        else:
-            interd['dIdE_aveabovecrit']=float('nan')
-            interd['E_dIdEcrit']=float('nan')
+##calculation of these quasi-FOMs is outdated - I don't think they are needed for anything downstream. JMG 20130912
+#    dIdEcrit=.0005
+#    SegdtSG(dlist, SGpts=10, order=1, k='I(A)_LinSub', dxk='dE')
+#    if not 'I(A)_LinSub_dtSG' in interd.keys():
+#        return
+#    for segd in d['segprops_dlist'][:1]: #only 0 and 1 again?
+#        y=interd['I(A)_LinSub_dtSG'][segd['inds']]
+#        x=interd['Ewe(V)_SG'][segd['inds']]
+#        starti=numpy.where(y<dIdEcrit)[0][-1]+1
+#        if starti<len(y):
+#            interd['dIdE_aveabovecrit']=y[starti:].mean()
+#            interd['E_dIdEcrit']=x[starti]
+#        else:
+#            interd['dIdE_aveabovecrit']=float('nan')
+#            interd['E_dIdEcrit']=float('nan')
 
 """ Averages a maximum of 2*nptoneside neighbor points for each datapoint. It
     uses the datapoints distance from the mean of its neighbors of interest

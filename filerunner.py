@@ -22,9 +22,8 @@ class FileRunner(object):
     """ if updating, takes in intermediate data from srcDir and saves it
         to dstDir """
     def __init__(self, queue, expfile, version, lastversion, modname,
-## ------- VSHIFT ---------------------------------------------------------------
-                 updatemod, newparams, funcdicts, srcDir, dstDir, rawDataDir):#, vshift):
-## ------------------------------------------------------------------------------        
+                 updatemod, newparams, funcdicts, srcDir, dstDir, rawDataDir, reference_Eo, technique_name):
+ 
         self.txtfile = expfile
         # gets the name of the experiment from the file path
         self.exitSuccess = 0
@@ -33,9 +32,7 @@ class FileRunner(object):
         self.dstDir = dstDir
         self.rawDataDir = rawDataDir
         self.fdicts = funcdicts
-## ------- VSHIFT --------------------------------------------------------       
-##        self.vshift = vshift
-## -----------------------------------------------------------------------       
+        self.reference_Eo = reference_Eo      
         # If the program is updating, intermediate data from the previous
         #   version of the functions will be imported and used to calculate
         #   new figures of merit.
@@ -48,7 +45,11 @@ class FileRunner(object):
             try:
                 pckpath = os.path.join(srcDir, self.expfilename+'.pck')
                 with open(pckpath, 'r') as pckfile:
-                    oldversion, self.FOMs, self.interData, self.params = pickle.load(pckfile)
+                    pf=pickle.load(pckfile)
+                    oldversion = pf['version']
+                    self.FOMs = pf['fom']
+                    self.interData = pf['intermediate_arrays']
+                    self.params = pf['function_parameters']
                 if oldversion == lastversion:
                     funcMod = __import__(updatemod)
                     updating = True
@@ -87,19 +88,25 @@ class FileRunner(object):
         # skip this file if it has fewer than 100 lines of data
         if self.rawDataLength < 100:
             return
+            
+        #ONLY USE OF reference_Eo: for any rawDict that will be run through fomfunctions, calculate the voltage-corrected array here with the intention that any fomfunction data uses this array so that all FOM and interd arrays are in units V vs E0 instead of V vs Ref.
+        if 'Ewe(V)' in self.rawData.keys():
+                self.interData['Ewe(V)_E0']=self.rawData['Ewe(V)']-self.reference_Eo
+                
         # getmembers returns functions in alphabetical order.  We sort these
         #   functions by the line at which they start in the source code so
         #   that they can be run in the correct order.
         allFuncs = [ftup[1] for ftup in sorted(inspect.getmembers(
             funcMod,inspect.isfunction), key=lambda f: inspect.getsourcelines(f[1])[1])]
         validDictArgs = [self.rawData, self.interData]
-        expType = self.rawData.get('BLTechniqueName')
+        if technique_name=='':
+            technique_name = self.rawData.get('BLTechniqueName')
         try:
             # the functions to run for this experiment are specified by
             #   EXPERIMENT_FUNCTIONS in the functions file
-            targetFOMs = funcMod.EXPERIMENT_FUNCTIONS[expType]
+            targetFOMs = funcMod.EXPERIMENT_FUNCTIONS[technique_name]
         except KeyError:
-            raise KeyError("Unrecognized experiment type: %s." %expType)
+            raise KeyError("Unrecognized experiment type: %s." %technique_name)
         if not targetFOMs:
             # nothing else to do for this file
             self.exitSuccess = 1
@@ -153,12 +160,7 @@ class FileRunner(object):
             if argname in fdict['batchvars']:
                 # retrieve current variable in batch
                 datavar = [var for var in varset if var in fdict['~'+argname]][0]
-                return datavar
-## ------- VSHIFT --------------------------------------------------------        
-##            elif argname == 'vshift':
-##                # vshift is an input to the FileRunner 
-##                return self.vshift
-## -----------------------------------------------------------------------        
+                return datavar     
             elif (fdict[argname] in self.rawData) or (fdict[argname] in self.interData):
                 # raw/intermediate data value
                 return fdict[argname]
@@ -175,22 +177,31 @@ class FileRunner(object):
                     self.interData.pop(ikey, None)
             if (isinstance(ival, dict)):
                 self.interData.pop(ikey, None)
-
-    """ save tuple of self.FOMs, self.interData (complete), and self.params
+        for ikey, ival in self.rawData.items():
+            if (isinstance(ival, jsontranslator.numpy.ndarray) or
+                isinstance(ival, list)):
+                if len(ival) != self.rawDataLength:
+                    self.rawData.pop(ikey, None)
+            if (isinstance(ival, dict)):
+                self.rawData.pop(ikey, None)
+    """ save dict of self.FOMs, self.interData (complete), and self.params
         in a pickle file of the name expfilename_version.pck """
     def savePck(self):
         savepath = os.path.join(self.dstDir, self.expfilename+'.pck')
         with open(savepath, 'w') as pckfile:
-            pickle.dump((self.version, self.FOMs, self.interData,
-                         self.params), pckfile)
+            saveDict=dict([(k, v) for k, v in zip(\
+                ["version", "measurement_info", "fom", "raw_arrays", \
+                "intermediate_arrays", "function_parameters"], \
+                [self.version, self.info, self.FOMs, self.rawData, self.interData, self.params])])
+            pickle.dump(saveDict, pckfile)
 
-    """ save tuple of version name, self.FOMs, self.interData (stripped),
-        and self.params in a plain-text JSON file (tuple will be turned
-        into JSON array and dicts will be turned into JSON objects)
+    """ save dict of version name, self.FOMs, self.interData (stripped),
+        and self.params in a plain-text JSON file (JSON object containing
+        version and dicts which are also JSON objects)
     """
     def saveJSON(self):
         savepath = os.path.join(self.dstDir, self.expfilename+'.json')
-        dataTup = (self.FOMs, self.interData, self.params)
+        dataTup = (self.info, self.FOMs, self.rawData, self.interData, self.params)
         jsontranslator.toJSON(savepath, self.version, dataTup)
 
     """ Save tuple of self.FOMs, self.interData (stripped), and self.params
@@ -200,5 +211,5 @@ class FileRunner(object):
         convention of these XML files. """
     def saveXML(self):
         savepath = os.path.join(self.dstDir, self.expfilename+'.xml')
-        dataTup = (self.FOMs, self.interData, self.params)
+        dataTup = (self.info, self.FOMs, self.rawData, self.interData, self.params)
         xmltranslator.toXML(savepath, self.version, dataTup)
